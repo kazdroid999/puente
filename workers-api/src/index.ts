@@ -23,7 +23,14 @@ const app = new Hono<{ Bindings: Env; Variables: { userId: string } }>();
 app.use('*', logger());
 app.use('*', secureHeaders({
   strictTransportSecurity: 'max-age=63072000; includeSubDomains; preload',
-  contentSecurityPolicy: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rzrewjgtgazdpstnkhbt.supabase.co https://api.puente-saas.com; frame-ancestors 'none'",
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "https:"],
+    connectSrc: ["'self'", "https://rzrewjgtgazdpstnkhbt.supabase.co", "https://api.puente-saas.com"],
+    frameAncestors: ["'none'"],
+  },
   xFrameOptions: 'DENY',
   permissionsPolicy: { camera: [], microphone: [], geolocation: [] },
 }));
