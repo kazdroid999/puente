@@ -708,16 +708,41 @@ function showLegal(page) {
   document.getElementById('legal-modal').style.display = 'block';
 }
 
+// ---- Subdomain routing ----
+const HOST = window.location.hostname;
+const IS_DASHBOARD = HOST.startsWith('dashboard.');
+const IS_APPS = HOST.startsWith('apps.');
+const IS_ADMIN = HOST.startsWith('admin.');
+
 // ---- Init ----
 checkAuth();
 
 // Handle email confirmation redirect
 if (window.location.hash.includes('access_token')) {
-  // Supabase will auto-handle this via onAuthStateChange
   setTimeout(() => {
     window.location.hash = '';
     showDashboard();
   }, 500);
+}
+
+// Subdomain auto-routing after auth check
+if (IS_DASHBOARD || IS_ADMIN) {
+  // Dashboard/Admin: auto-show dashboard if logged in, else show login
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      showDashboard();
+      // Hide LP sections for dashboard subdomain
+      document.querySelectorAll('.hero, #apps, #process, #pricing').forEach(el => el.style.display = 'none');
+    } else {
+      showAuth('login');
+    }
+  });
+} else if (IS_APPS) {
+  // Apps subdomain: scroll to apps section
+  setTimeout(() => {
+    const appsEl = document.getElementById('apps');
+    if (appsEl) appsEl.scrollIntoView({ behavior: 'smooth' });
+  }, 300);
 }
 </script>
 </body>
