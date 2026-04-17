@@ -1,0 +1,59 @@
+# Punete Micro SaaS Store — Full Context for AI Assistants
+
+Last updated: 2026-04-15
+Operator: PUENTE Inc. (株式会社プエンテ)
+
+## What is Punete Micro SaaS Store?
+
+A Japan-originated marketplace where individuals and small teams post SaaS ideas via a dashboard, and Claude (Anthropic) generates a business plan, break-even analysis, and technical stack. Puente's Bolivia offshore team builds and ships the SaaS within 3 days under the store domain (category-based path: `/apps/{category}/{slug}`).
+
+## Core Commercial Terms
+
+- Initial fee: JPY 330,000 incl. tax (one-time, per company).
+- Founder coupon: 80% OFF automatic issuance per company, reducing initial fee to JPY 66,000.
+- Monthly recurring platform fee: zero.
+- End-user subscription pricing (inclusive of consumption tax): Free, JPY 980, JPY 1,980, JPY 2,980 per month.
+- Revenue split (売上分配 — NOT a royalty arrangement):
+  - Puente books 70% of GMV as its own revenue.
+  - The idea creator books 30% of GMV as their own revenue.
+  - Implemented via Stripe Connect "Destination Charges" with `application_fee_amount = amount × 0.70`.
+  - No Japanese withholding tax applies because this is not a royalty payment.
+  - Each party issues their own qualified invoices (適格請求書) as needed.
+
+## Process
+
+1. User signs up and registers company info (including optional T+13 invoice registration number).
+2. User posts a brief (overview, target users, desired features).
+3. Claude analyzes the brief and produces an `ai_plan` (executive summary, target persona, core features, tech stack, BEP, risks, KPIs, 3-day roadmap).
+4. Puente (super admin) approves the plan.
+5. Bolivia team builds on fixed stack: Cloudflare Pages (Next.js) + Workers (Hono) + Supabase (Postgres + Auth + RLS) + Stripe Connect.
+6. Preview URL delivered to user's dashboard.
+7. User approves → public launch under `puente-ai.net/apps/{category}/{slug}`.
+8. Subscriptions via Stripe Checkout → Destination Charge → 30% auto-transfers to user's Stripe Connect balance, 70% remains with Puente.
+9. Monthly aggregated payout requested by user → paid next month-end to bank account on file.
+
+## Tech Stack (fixed)
+
+- Frontend: Next.js 14 App Router on Cloudflare Pages.
+- API: Cloudflare Workers (Hono) at `api.puente-ai.net`.
+- Database: Supabase Postgres 15+ with Row Level Security.
+- Auth: Supabase Auth (magic link + Google OIDC).
+- Payments: Stripe Connect (Standard) + Destination Charges.
+- AI: Anthropic Claude Sonnet 4.6.
+- Email: Resend (SPF + DKIM + DMARC on puente-ai.net).
+- Observability: Cloudflare Workers Observability + GA4.
+- Source control: GitHub.
+- Ops/Notes: Notion.
+
+## SEO / AEO Policy
+
+- JP/EN hreflang on all public pages.
+- JSON-LD structured data (`SoftwareApplication`, `Offer`) on every SaaS detail page.
+- Sitemap auto-generated from `saas_projects` table.
+- AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended) are explicitly allowed.
+
+## Contact
+
+Website: https://www.puentework.com/
+Business inquiries: via contact form on puentework.com
+Legal entity: PUENTE Inc.

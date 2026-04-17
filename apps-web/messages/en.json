@@ -1,0 +1,45 @@
+{
+  "common": {
+    "brand": "Punete Micro SaaS Store",
+    "tagline": "Launch in 3 days. AI turns your idea into SaaS.",
+    "cta_primary": "Submit your idea",
+    "cta_secondary": "Browse store",
+    "search": "Search",
+    "sign_in": "Sign in",
+    "dashboard": "Dashboard"
+  },
+  "nav": {
+    "store": "Store",
+    "editorial": "Editorial Picks",
+    "pricing": "Pricing",
+    "about": "About Puente"
+  },
+  "apps": {
+    "title": "Micro SaaS Store",
+    "category": {
+      "business": "Business",
+      "learning": "Learning",
+      "entertainment": "Entertainment",
+      "infra": "Infra"
+    },
+    "featured": "Featured apps",
+    "new": "New",
+    "all": "All apps",
+    "plan": { "free": "Free", "basic": "Basic", "standard": "Standard", "pro": "Pro" },
+    "subscribe": "Subscribe",
+    "visit": "Open app"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "revenue": "Revenue",
+    "payouts": "Payouts",
+    "invoice_registration": "Japanese Qualified Invoice Issuer Registration Number"
+  },
+  "footer": {
+    "company": "PUENTE Inc.",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "tokushoho": "Commerce Disclosure",
+    "contact": "Contact"
+  }
+}

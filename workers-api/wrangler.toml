@@ -1,0 +1,25 @@
+name = "puente-store-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+APP_ORIGIN = "https://puente-saas.com"
+API_ORIGIN = "https://api.puente-saas.com"
+
+# Secrets (wrangler secret put で投入):
+#   ANTHROPIC_API_KEY
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   STRIPE_CONNECT_CLIENT_ID
+#   SUPABASE_URL
+#   SUPABASE_ANON_KEY
+#   RESEND_API_KEY
+#   PRTIMES_API_KEY (optional)
+
+[[unsafe.custom_domains]]
+hostname = "api.puente-saas.com"
+
+[observability]
+enabled = true

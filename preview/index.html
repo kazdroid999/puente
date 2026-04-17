@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puente Micro SaaS Store — アイデアを3日でSaaSに</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAFAF7;--ink:#0F0F0F;--sub:#525252;--line:#E5E5E0;--accent:#FF5A1F;--accent2:#1A4CD1;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP','Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+header{position:sticky;top:0;background:rgba(250,250,247,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);z-index:50}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Zen Kaku Gothic New';font-weight:900;font-size:18px;letter-spacing:-.02em;text-decoration:none;color:inherit}
+.logo .mark{width:28px;height:28px;background:var(--ink);color:var(--accent);display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:900;font-size:18px}
+.nav ul{display:flex;gap:28px;list-style:none;align-items:center}
+.nav a{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}
+.nav a:hover{color:var(--accent)}
+.nav .cta{background:var(--ink);color:#fff;padding:9px 18px;border-radius:999px;font-weight:600;cursor:pointer}
+.nav .cta:hover{background:var(--accent)}
+.hero{padding:96px 0 80px;position:relative;overflow:hidden}
+.hero h1{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:clamp(40px,7vw,76px);line-height:1.05;letter-spacing:-.03em;margin-bottom:24px}
+.hero h1 .accent{color:var(--accent)}
+.hero p.lead{font-size:20px;color:var(--sub);max-width:680px;margin-bottom:40px}
+.hero .ctas{display:flex;gap:16px;flex-wrap:wrap}
+.btn{padding:14px 28px;border-radius:999px;font-weight:600;text-decoration:none;font-size:15px;display:inline-flex;align-items:center;gap:8px;transition:transform .15s;cursor:pointer;border:none}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:80px;padding-top:48px;border-top:1px solid var(--line)}
+.kpi .num{font-family:'Inter';font-weight:700;font-size:36px;letter-spacing:-.02em;color:var(--ink)}
+.kpi .num span{color:var(--accent)}
+.kpi .lbl{color:var(--sub);font-size:13px;margin-top:4px}
+section{padding:80px 0}
+.section-title{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:36px;letter-spacing:-.02em;margin-bottom:8px}
+.section-sub{color:var(--sub);margin-bottom:40px}
+.featured{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:900px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:all .2s;cursor:pointer;text-decoration:none;color:inherit}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:var(--ink)}
+.card .thumb{aspect-ratio:16/10;background:linear-gradient(135deg,#FF5A1F22,#1A4CD122);display:flex;align-items:center;justify-content:center;font-family:'Zen Kaku Gothic New';font-weight:900;font-size:42px;color:var(--ink);letter-spacing:-.02em}
+.card.c3 .thumb{background:linear-gradient(135deg,#0F0F0F,#FF5A1F);color:#fff}
+.card .body{padding:20px}
+.card .cat{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.card h3{font-size:17px;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
+.card .tag{font-size:13px;color:var(--sub);line-height:1.5;margin-bottom:14px;min-height:39px}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--sub);border-top:1px solid var(--line);padding-top:12px}
+.card .price{font-weight:700;color:var(--ink);font-size:14px}
+.process{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;position:relative}
+.process .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;position:relative}
+.process .num{font-family:'Inter';font-weight:700;color:var(--accent);font-size:14px;margin-bottom:12px}
+.process h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.process p{font-size:13px;color:var(--sub);line-height:1.5}
+.pricing{background:var(--ink);color:#fff;padding:80px 0;border-radius:24px;margin:40px 0}
+.pricing .wrap{max-width:1100px}
+.pricing h2{color:#fff}
+.pricing .section-sub{color:#888}
+.plans{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px}
+.plan{background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:32px}
+.plan.pop{border-color:var(--accent);background:linear-gradient(180deg,#1a1a1a,#FF5A1F11)}
+.plan .badge{display:inline-block;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.plan h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.plan .price-num{font-family:'Inter';font-weight:700;font-size:48px;letter-spacing:-.02em;margin:16px 0 4px}
+.plan .price-num .yen{font-size:24px}
+.plan .price-num .per{font-size:14px;color:#888;font-weight:400}
+.plan .desc{color:#aaa;margin-bottom:20px;font-size:14px}
+.plan ul{list-style:none;margin:24px 0}
+.plan li{padding:8px 0;color:#ddd;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.plan li::before{content:"✓";color:var(--accent);font-weight:700;flex-shrink:0}
+.split{background:linear-gradient(180deg,#FFF,#FAFAF7);border:1px solid var(--line);border-radius:20px;padding:48px;margin-top:32px}
+.split h3{font-size:24px;font-weight:900;font-family:'Zen Kaku Gothic New';margin-bottom:16px}
+.split-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px}
+.split-card{padding:28px;border-radius:14px}
+.split-card.user{background:#FFF5EF;border:2px solid var(--accent)}
+.split-card.puente{background:#0F0F0F;color:#fff}
+.split-card .pct{font-family:'Inter';font-weight:900;font-size:64px;letter-spacing:-.04em;line-height:1}
+.split-card .label{font-weight:700;margin-top:8px}
+.split-card .note{font-size:13px;margin-top:12px;opacity:.7}
+footer{background:var(--ink);color:#aaa;padding:64px 0 32px;margin-top:80px}
+footer .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+footer h5{color:#fff;font-size:13px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em}
+footer ul{list-style:none}
+footer li{margin-bottom:10px;font-size:14px}
+footer a{color:#aaa;text-decoration:none}
+footer a:hover{color:var(--accent)}
+footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;display:flex;justify-content:space-between}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:20px;padding:40px;max-width:440px;width:90%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--sub)}
+.modal h2{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:24px;margin-bottom:8px}
+.modal .modal-sub{color:var(--sub);font-size:14px;margin-bottom:24px}
+.modal label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--sub)}
+.modal input[type="email"],.modal input[type="password"],.modal input[type="text"],.modal textarea,.modal select{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;outline:none;transition:border .2s}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--accent)}
+.modal textarea{resize:vertical;min-height:100px}
+.field{margin-bottom:16px}
+.modal .btn{width:100%;justify-content:center;margin-top:8px}
+.modal .switch{text-align:center;margin-top:16px;font-size:13px;color:var(--sub)}
+.modal .switch a{color:var(--accent);font-weight:600;cursor:pointer}
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+.msg.error{background:#FEE;color:#C00;display:block}
+.msg.success{background:#EFE;color:#060;display:block}
+
+/* Dashboard */
+#dashboard-section{display:none;padding:80px 0}
+#dashboard-section.active{display:block}
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
+.dash-header .user-info{display:flex;align-items:center;gap:12px}
+.dash-header .avatar{width:40px;height:40px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:40px}
+.dash-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+.dash-card .dc-num{font-family:'Inter';font-weight:700;font-size:32px;color:var(--accent)}
+.dash-card .dc-label{font-size:13px;color:var(--sub);margin-top:4px}
+.idea-list{margin-top:32px}
+.idea-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.idea-item .idea-name{font-weight:700;font-size:16px}
+.idea-item .idea-status{font-size:12px;padding:4px 10px;border-radius:999px;font-weight:600}
+.idea-item .idea-status.draft{background:#FFF3E0;color:#E65100}
+.idea-item .idea-status.ai_analyzing{background:#E3F2FD;color:#1565C0}
+.idea-item .idea-status.published{background:#E8F5E9;color:#2E7D32}
+
+@media(max-width:900px){
+  .featured{grid-template-columns:1fr}
+  .process{grid-template-columns:1fr 1fr}
+  .plans{grid-template-columns:1fr}
+  .kpi{grid-template-columns:repeat(2,1fr)}
+  .split-grid{grid-template-columns:1fr}
+  .dash-cards{grid-template-columns:1fr}
+  footer .grid{grid-template-columns:1fr 1fr;gap:32px}
+  .nav ul{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="logo"><span class="mark">P</span> Puente Micro SaaS Store</a>
+    <ul>
+      <li><a href="#apps">アプリを探す</a></li>
+      <li><a href="#process">仕組み</a></li>
+      <li><a href="#pricing">料金</a></li>
+      <li><a href="#" id="nav-login" onclick="showAuth('login')">ログイン</a></li>
+      <li id="nav-user" style="display:none"><a href="#" id="nav-dashboard" onclick="showDashboard()">ダッシュボード</a></li>
+      <li id="nav-logout-li" style="display:none"><a href="#" onclick="doLogout()">ログアウト</a></li>
+    </ul>
+    <a href="#" class="cta" id="nav-cta" onclick="handleCTA()">企画を投稿する →</a>
+  </div>
+</header>
+
+<main id="main-content">
+  <section class="hero">
+    <div class="wrap">
+      <h1>アイデアを<br><span class="accent">3日</span>でSaaSに。</h1>
+      <p class="lead">アイディアはあるけど、自分でSaaSを作れない方へ。AIが解析・設計し、ボリビアチームが開発・運用。あなたはアイデアを書くだけで、Micro SaaS のオーナーに。</p>
+      <div class="ctas">
+        <button class="btn btn-primary" onclick="handleCTA()">企画を投稿する →</button>
+        <a href="#apps" class="btn btn-ghost">公開中のSaaSを見る</a>
+      </div>
+      <div class="kpi">
+        <div class="item"><div class="num">3<span>日</span></div><div class="lbl">アイデア → ローンチ</div></div>
+        <div class="item"><div class="num">¥330,000</div><div class="lbl">初期設定費用（先着 80% OFF）</div></div>
+        <div class="item"><div class="num">¥0</div><div class="lbl">月額プラットフォーム費</div></div>
+        <div class="item"><div class="num"><span>30</span>%</div><div class="lbl">ユーザー側 売上シェア</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="apps">
+    <div class="wrap">
+      <h2 class="section-title">注目の Micro SaaS</h2>
+      <p class="section-sub">AI が設計し、ボリビアチームが開発した、稼働中のサブスク型サービス</p>
+      <div class="featured">
+        <a class="card c1" href="https://hojokin-ai.org/" target="_blank">
+          <div class="thumb">補</div>
+          <div class="body">
+            <div class="cat">Business / Finance</div>
+            <h3>補助金AI</h3>
+            <p class="tag">貴社に合った補助金を AI が自動分析。申請代行の専門家も AI が即時マッチング。成果報酬なしの透明な月額固定。</p>
+            <div class="meta"><span class="price">無料プランあり</span><span>hojokin-ai.org ↗</span></div>
+          </div>
+        </a>
+        <a class="card c3" href="https://ken-ringo.com/" target="_blank">
+          <div class="thumb">語</div>
+          <div class="body">
+            <div class="cat">語学 AI コーチ</div>
+            <h3>KEN→RINGO</h3>
+            <p class="tag">あなたの話し方の癖・ミス・思考パターンを AI が学習し最適化するマルチリンガル語学AIコーチ。毎日 30 分の会話で、勉強しなくていい語学学習。</p>
+            <div class="meta"><span class="price">15 時間まで無料</span><span>ken-ringo.com ↗</span></div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="process" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <h2 class="section-title">3日でローンチする仕組み</h2>
+      <p class="section-sub">企画投稿から公開まで、最短72時間</p>
+      <div class="process">
+        <div class="step"><div class="num">STEP 01</div><h4>企画投稿</h4><p>ダッシュボードで概要・対象ユーザー・欲しい機能を入力。</p></div>
+        <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計</h4><p>Claude が事業計画・BEP・技術スタックを自動ドラフト。</p></div>
+        <div class="step"><div class="num">STEP 03</div><h4>Puente 承認 → 開発</h4><p>承認後、Puente ボリビアチームが Next.js + Supabase で実装。</p></div>
+        <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認</h4><p>非公開リンクをダッシュボードで通知。あなたが OK で公開。</p></div>
+        <div class="step"><div class="num">STEP 05</div><h4>自動プロモ</h4><p>PR Times / SNS / YouTube Short まで自動配信。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <h2 class="section-title">料金</h2>
+      <p class="section-sub">初期設定費用のみ。月額プラットフォーム費は0円。</p>
+      <div class="pricing">
+        <div class="wrap">
+          <div class="plans">
+            <div class="plan">
+              <h3>初期設定費用</h3>
+              <div class="price-num"><span class="yen">¥</span>330,000<span class="per"> （税込）</span></div>
+              <p class="desc">企画解析・設計・開発・公開・ホスティング・運用保守すべて込み。</p>
+              <ul>
+                <li>AI 企画解析・事業計画・BEP 自動生成</li>
+                <li>Next.js + Cloudflare + Supabase での実装</li>
+                <li>apps.puente-saas.com 配下で公開・SSL 自動</li>
+                <li>運用保守・障害対応（Puente ボリビアチーム）</li>
+              </ul>
+            </div>
+            <div class="plan pop">
+              <span class="badge">先着特典・リリース記念価格</span>
+              <h3>創業メンバー価格</h3>
+              <div class="price-num"><span class="yen">¥</span>66,000<span class="per"> （80% OFF）</span></div>
+              <p class="desc">サインアップ時にクーポン自動発行。最初の Micro SaaS オーナーへ。</p>
+              <ul>
+                <li>同上のフルパッケージ</li>
+                <li>事例として PR Times 掲載</li>
+                <li>Puente スーパー管理者による直接サポート</li>
+                <li>1社1回まで</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="split">
+        <h3>売上の分配について</h3>
+        <p style="color:var(--sub)">エンドユーザー課金（無料 / ¥980 / ¥1,980 / ¥2,980 月額・税込）の売上は、Stripe Connect により自動で 70 / 30 に分配されます。<strong>ロイヤリティ支払いではなく、各自の売上として計上</strong>されます。</p>
+        <div class="split-grid">
+          <div class="split-card user">
+            <div class="pct">30%</div>
+            <div class="label">あなた（アイデア提供者）の売上</div>
+            <div class="note">Stripe Connect 経由で指定口座へ翌月末自動振込。</div>
+          </div>
+          <div class="split-card puente">
+            <div class="pct">70%</div>
+            <div class="label">プエンテの売上</div>
+            <div class="note">運用・保守・プロモーション・インフラ・AI 利用料を含む。プエンテからの請求書は発行されません。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Dashboard (shown after login) -->
+<section id="dashboard-section">
+  <div class="wrap">
+    <div class="dash-header">
+      <div>
+        <h2 class="section-title">ダッシュボード</h2>
+        <p class="section-sub" id="dash-welcome">ようこそ</p>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-primary" onclick="showAuth('idea')">新しい企画を投稿</button>
+        <button class="btn btn-ghost" onclick="doLogout()">ログアウト</button>
+      </div>
+    </div>
+    <div class="dash-cards">
+      <div class="dash-card"><div class="dc-num" id="dc-ideas">0</div><div class="dc-label">投稿した企画</div></div>
+      <div class="dash-card"><div class="dc-num" id="dc-apps">0</div><div class="dc-label">稼働中 SaaS</div></div>
+      <div class="dash-card"><div class="dc-num" id="dc-revenue">¥0</div><div class="dc-label">今月の売上</div></div>
+    </div>
+    <h3 style="font-size:20px;font-weight:700;margin-bottom:16px">マイ企画</h3>
+    <div id="ideas-list">
+      <p style="color:var(--sub)">まだ企画がありません。「新しい企画を投稿」から始めましょう。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+
+    <!-- Login Form -->
+    <div id="form-login">
+      <h2>ログイン</h2>
+      <p class="modal-sub">Puente Micro SaaS Store にログイン</p>
+      <div id="login-msg" class="msg"></div>
+      <div class="field">
+        <label>メールアドレス</label>
+        <input type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>パスワード</label>
+        <input type="password" id="login-password" placeholder="パスワード">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">ログイン</button>
+      <p class="switch">アカウントをお持ちでない方 <a onclick="switchForm('signup')">新規登録</a></p>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="form-signup" style="display:none">
+      <h2>新規登録</h2>
+      <p class="modal-sub">無料でアカウントを作成</p>
+      <div id="signup-msg" class="msg"></div>
+      <div class="field">
+        <label>メールアドレス</label>
+        <input type="email" id="signup-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>パスワード（8文字以上）</label>
+        <input type="password" id="signup-password" placeholder="パスワード">
+      </div>
+      <div class="field">
+        <label>お名前（表示名）</label>
+        <input type="text" id="signup-name" placeholder="保科 一男">
+      </div>
+      <button class="btn btn-primary" onclick="doSignup()">アカウント作成</button>
+      <p class="switch">既にアカウントをお持ちの方 <a onclick="switchForm('login')">ログイン</a></p>
+    </div>
+
+    <!-- Idea Submission Form -->
+    <div id="form-idea" style="display:none">
+      <h2>企画を投稿</h2>
+      <p class="modal-sub">AI が解析・設計し、3日でSaaS化します</p>
+      <div id="idea-msg" class="msg"></div>
+      <div class="field">
+        <label>サービス名</label>
+        <input type="text" id="idea-name" placeholder="例：補助金AI">
+      </div>
+      <div class="field">
+        <label>カテゴリ</label>
+        <select id="idea-category">
+          <option value="business">ビジネス</option>
+          <option value="learning">学習・教育</option>
+          <option value="entertainment">エンタメ</option>
+          <option value="infra">インフラ・ツール</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>サービス概要</label>
+        <textarea id="idea-overview" placeholder="どんなサービスで、誰の、どんな課題を解決しますか？"></textarea>
+      </div>
+      <div class="field">
+        <label>ターゲットユーザー</label>
+        <input type="text" id="idea-target" placeholder="例：中小企業の経営者、フリーランス">
+      </div>
+      <div class="field">
+        <label>欲しい機能（改行で区切り）</label>
+        <textarea id="idea-features" placeholder="例：&#10;AIによる自動分析&#10;レポート生成&#10;Slack通知"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitIdea()">企画を投稿する</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="logo" style="color:#fff;margin-bottom:16px"><span class="mark">P</span> Puente Micro SaaS Store</div>
+        <p style="font-size:13px">アイデアを 3 日で SaaS に。<br>運営：株式会社プエンテ</p>
+      </div>
+      <div>
+        <h5>サービス</h5>
+        <ul><li><a href="#apps">アプリ一覧</a></li><li><a href="#" onclick="handleCTA()">企画を投稿</a></li><li><a href="#pricing">料金</a></li></ul>
+      </div>
+      <div>
+        <h5>会社</h5>
+        <ul><li><a href="https://www.puentework.com" target="_blank">プエンテについて</a></li><li><a href="mailto:info@puentework.com">お問合せ</a></li></ul>
+      </div>
+      <div>
+        <h5>リーガル</h5>
+        <ul><li><a href="/terms">利用規約</a></li><li><a href="/privacy">プライバシー</a></li><li><a href="/tokushoho">特商法表示</a></li></ul>
+      </div>
+    </div>
+    <div class="copy">
+      <span>&copy; 2026 PUENTE Inc.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://rzrewjgtgazdpstnkhbt.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6cmV3amd0Z2F6ZHBzdG5raGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzI4OTksImV4cCI6MjA5MDkwODg5OX0.UmkAdfpfsLVgrzjf1qtQmAuXdsrccwiqsgQwcSGYawo';
+const API_BASE = 'https://api.puente-saas.com';
+
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentUser = null;
+
+// ---- Auth State ----
+async function checkAuth() {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    updateUILoggedIn();
+  }
+}
+
+_sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    currentUser = session.user;
+    updateUILoggedIn();
+  } else {
+    currentUser = null;
+    updateUILoggedOut();
+  }
+});
+
+function updateUILoggedIn() {
+  document.getElementById('nav-login').style.display = 'none';
+  document.getElementById('nav-user').style.display = '';
+  document.getElementById('nav-logout-li').style.display = '';
+  document.getElementById('dash-welcome').textContent = 'ようこそ、' + (currentUser.user_metadata?.display_name || currentUser.email);
+}
+
+function updateUILoggedOut() {
+  document.getElementById('nav-login').style.display = '';
+  document.getElementById('nav-user').style.display = 'none';
+  document.getElementById('nav-logout-li').style.display = 'none';
+  document.getElementById('dashboard-section').classList.remove('active');
+  document.getElementById('main-content').style.display = '';
+}
+
+// ---- Modal ----
+function showAuth(form) {
+  document.getElementById('auth-modal').classList.add('active');
+  switchForm(form || 'login');
+}
+
+function closeModal() {
+  document.getElementById('auth-modal').classList.remove('active');
+}
+
+function switchForm(name) {
+  ['login','signup','idea'].forEach(f => {
+    document.getElementById('form-' + f).style.display = f === name ? '' : 'none';
+  });
+  // Clear messages
+  ['login-msg','signup-msg','idea-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'msg';
+    el.textContent = '';
+  });
+}
+
+function handleCTA() {
+  if (currentUser) {
+    showAuth('idea');
+  } else {
+    showAuth('signup');
+  }
+  return false;
+}
+
+function showDashboard() {
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('dashboard-section').classList.add('active');
+  loadDashboard();
+  return false;
+}
+
+// ---- Login ----
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const msg = document.getElementById('login-msg');
+
+  if (!email || !password) { showMsg(msg, 'error', 'メールアドレスとパスワードを入力してください'); return; }
+
+  const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+  if (error) { showMsg(msg, 'error', error.message); return; }
+
+  closeModal();
+  showDashboard();
+}
+
+// ---- Signup ----
+async function doSignup() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const name = document.getElementById('signup-name').value.trim();
+  const msg = document.getElementById('signup-msg');
+
+  if (!email || !password) { showMsg(msg, 'error', 'メールアドレスとパスワードを入力してください'); return; }
+  if (password.length < 8) { showMsg(msg, 'error', 'パスワードは8文字以上で入力してください'); return; }
+
+  const { data, error } = await _sb.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: name } }
+  });
+
+  if (error) { showMsg(msg, 'error', error.message); return; }
+
+  if (data.user && !data.user.confirmed_at && data.user.identities?.length === 0) {
+    showMsg(msg, 'error', 'このメールアドレスは既に登録されています');
+    return;
+  }
+
+  showMsg(msg, 'success', '確認メールを送信しました。メール内のリンクをクリックしてアカウントを有効化してください。');
+}
+
+// ---- Logout ----
+async function doLogout() {
+  await _sb.auth.signOut();
+  window.location.hash = '';
+  return false;
+}
+
+// ---- Dashboard ----
+async function loadDashboard() {
+  if (!currentUser) return;
+
+  // Load ideas
+  const { data: ideas } = await _sb
+    .from('saas_ideas')
+    .select('*')
+    .eq('owner_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  const list = document.getElementById('ideas-list');
+  const countEl = document.getElementById('dc-ideas');
+
+  if (ideas && ideas.length > 0) {
+    countEl.textContent = ideas.length;
+    list.innerHTML = ideas.map(i => `
+      <div class="idea-item">
+        <div>
+          <div class="idea-name">${escHtml(i.name)}</div>
+          <div style="font-size:13px;color:var(--sub);margin-top:4px">${escHtml(i.category)} · ${new Date(i.created_at).toLocaleDateString('ja-JP')}</div>
+        </div>
+        <span class="idea-status ${i.status}">${statusLabel(i.status)}</span>
+      </div>
+    `).join('');
+  } else {
+    countEl.textContent = '0';
+    list.innerHTML = '<p style="color:var(--sub)">まだ企画がありません。「新しい企画を投稿」から始めましょう。</p>';
+  }
+
+  // Load apps
+  const { data: apps } = await _sb
+    .from('saas_apps')
+    .select('id')
+    .eq('owner_id', currentUser.id)
+    .eq('is_published', true);
+  document.getElementById('dc-apps').textContent = apps?.length || 0;
+}
+
+function statusLabel(s) {
+  const map = {
+    draft: '下書き',
+    ai_analyzing: 'AI 解析中',
+    pending_approval: '承認待ち',
+    approved: '承認済み',
+    in_development: '開発中',
+    ready_for_review: 'レビュー待ち',
+    preview: 'プレビュー',
+    published: '公開中',
+    paused: '一時停止',
+    archived: 'アーカイブ',
+    rejected: '却下'
+  };
+  return map[s] || s;
+}
+
+// ---- Submit Idea ----
+async function submitIdea() {
+  if (!currentUser) { showAuth('login'); return; }
+
+  const name = document.getElementById('idea-name').value.trim();
+  const category = document.getElementById('idea-category').value;
+  const overview = document.getElementById('idea-overview').value.trim();
+  const target = document.getElementById('idea-target').value.trim();
+  const featuresRaw = document.getElementById('idea-features').value.trim();
+  const msg = document.getElementById('idea-msg');
+
+  if (!name || !overview) { showMsg(msg, 'error', 'サービス名と概要は必須です'); return; }
+
+  const features = featuresRaw.split('\n').map(s => s.trim()).filter(Boolean);
+
+  const { data, error } = await _sb
+    .from('saas_ideas')
+    .insert({
+      owner_id: currentUser.id,
+      name,
+      category,
+      overview,
+      target_users: target,
+      features,
+      status: 'draft',
+    })
+    .select()
+    .single();
+
+  if (error) { showMsg(msg, 'error', error.message); return; }
+
+  showMsg(msg, 'success', '企画を投稿しました！AI が解析を開始します。');
+
+  // Clear form
+  document.getElementById('idea-name').value = '';
+  document.getElementById('idea-overview').value = '';
+  document.getElementById('idea-target').value = '';
+  document.getElementById('idea-features').value = '';
+
+  // Refresh dashboard
+  setTimeout(() => {
+    closeModal();
+    showDashboard();
+  }, 1500);
+}
+
+// ---- Utils ----
+function showMsg(el, type, text) {
+  el.className = 'msg ' + type;
+  el.textContent = text;
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ---- Init ----
+checkAuth();
+
+// Handle email confirmation redirect
+if (window.location.hash.includes('access_token')) {
+  // Supabase will auto-handle this via onAuthStateChange
+  setTimeout(() => {
+    window.location.hash = '';
+    showDashboard();
+  }, 500);
+}
+</script>
+</body>
+</html>

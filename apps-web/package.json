@@ -1,0 +1,29 @@
+{
+  "name": "puente-store-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && pnpm run pagefind",
+    "start": "next start",
+    "pagefind": "bash scripts/build-pagefind.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "14.2.18",
+    "next-intl": "^3.26.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "autoprefixer": "^10.4.20",
+    "pagefind": "^1.1.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.5.4"
+  }
+}

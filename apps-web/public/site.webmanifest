@@ -1,0 +1,16 @@
+{
+  "name": "Punete Micro SaaS Store",
+  "short_name": "Punete",
+  "description": "3日でローンチ。AIがあなたのアイディアをSaaSにする。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF7",
+  "theme_color": "#FF5A1F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "lang": "ja",
+  "categories": ["business", "productivity", "developer"]
+}

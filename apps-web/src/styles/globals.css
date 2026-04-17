@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: theme('colors.bg');
+  color: theme('colors.ink');
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; }
+
+/* Core Web Vitals 最適化: 画像の CLS 抑制 */
+img, video { max-width: 100%; height: auto; }
+
+.container-pad { @apply mx-auto max-w-content px-4 md:px-6; }
+.card { @apply rounded-2xl bg-surface border border-line; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition; }
+.btn-primary { @apply btn bg-ink text-white hover:bg-accent; }
+.btn-ghost { @apply btn border border-line bg-surface hover:border-ink; }

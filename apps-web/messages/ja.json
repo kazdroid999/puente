@@ -1,0 +1,50 @@
+{
+  "common": {
+    "brand": "Punete Micro SaaS Store",
+    "tagline": "3日でローンチ。AIが、あなたのアイディアをSaaSにする。",
+    "cta_primary": "企画を投稿する",
+    "cta_secondary": "ストアを見る",
+    "search": "検索",
+    "sign_in": "ログイン",
+    "dashboard": "ダッシュボード"
+  },
+  "nav": {
+    "store": "ストア",
+    "editorial": "編集部セレクション",
+    "pricing": "料金",
+    "about": "プエンテについて"
+  },
+  "apps": {
+    "title": "Micro SaaS ストア",
+    "category": {
+      "business": "ビジネス",
+      "learning": "学習",
+      "entertainment": "エンタメ",
+      "infra": "インフラ"
+    },
+    "featured": "注目のアプリ",
+    "new": "新着",
+    "all": "すべてのアプリ",
+    "plan": {
+      "free": "無料",
+      "basic": "ベーシック",
+      "standard": "スタンダード",
+      "pro": "プロ"
+    },
+    "subscribe": "登録する",
+    "visit": "アプリを開く"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "revenue": "売上",
+    "payouts": "振込",
+    "invoice_registration": "適格請求書発行事業者登録番号"
+  },
+  "footer": {
+    "company": "株式会社プエンテ",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "tokushoho": "特定商取引法に基づく表記",
+    "contact": "お問い合わせ"
+  }
+}

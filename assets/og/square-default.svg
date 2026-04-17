@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#FAFAF7"/>
+  <rect x="80" y="80" width="96" height="96" rx="24" fill="#0F0F0F"/>
+  <path d="M104 98 h32 a26 26 0 0 1 0 52 h-16 v24 h-16 z M120 114 v20 h16 a10 10 0 0 0 0-20 z" fill="#FF5A1F"/>
+  <text x="200" y="150" font-family="'Zen Kaku Gothic New', sans-serif" font-size="44" font-weight="700" fill="#0F0F0F">Punete</text>
+  <text x="80" y="500" font-family="'Zen Kaku Gothic New', sans-serif" font-size="112" font-weight="700" fill="#0F0F0F">3日で</text>
+  <text x="80" y="640" font-family="'Zen Kaku Gothic New', sans-serif" font-size="112" font-weight="700" fill="#0F0F0F">ローンチ。</text>
+  <rect x="80" y="740" width="920" height="4" fill="#0F0F0F"/>
+  <text x="80" y="830" font-family="'Zen Kaku Gothic New', sans-serif" font-size="56" font-weight="700" fill="#FF5A1F">AIがアイディアを</text>
+  <text x="80" y="900" font-family="'Zen Kaku Gothic New', sans-serif" font-size="56" font-weight="700" fill="#FF5A1F">SaaSにする。</text>
+  <text x="80" y="1000" font-family="'Noto Sans JP', sans-serif" font-size="32" fill="#666">puente-ai.net</text>
+</svg>

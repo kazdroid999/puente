@@ -1,0 +1,32 @@
+# Punete Micro SaaS Store
+
+> AIがアイディアを3日でSaaSにする、日本発のMicro SaaSマーケットプレイス。運営: 株式会社プエンテ。
+
+## Service model
+
+- Users post an idea (brief: overview, target users, desired features).
+- Claude analyzes the brief and generates a business plan, break-even point, tech stack, and 3-day roadmap.
+- Puente's Bolivia offshore engineering team builds and operates the SaaS.
+- Launched within 3 days under `apps.puente-ai.net/{category}/{slug}`.
+- Revenue split (not royalty): Puente 70% / creator 30%, each party booking own revenue.
+
+## Pricing
+
+- Initial fee: JPY 330,000 (incl. tax). Founder coupon: 80% OFF → JPY 66,000.
+- Monthly fee: none.
+- Subscription tiers for end users: Free / JPY 980 / JPY 1,980 / JPY 2,980 (incl. tax).
+
+## Key resources
+
+- [Store](https://puente-ai.net/apps)
+- [Editorial](https://puente-ai.net/apps/editorial)
+- [Pricing](https://puente-ai.net/pricing)
+- [Terms](https://puente-ai.net/terms)
+- [Privacy](https://puente-ai.net/privacy)
+- [Tokushoho](https://puente-ai.net/tokushoho)
+- [Full knowledge base](https://puente-ai.net/llms-full.txt)
+
+## Operator
+
+PUENTE Inc. / 株式会社プエンテ
+Website: https://www.puentework.com/
