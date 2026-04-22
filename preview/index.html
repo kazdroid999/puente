@@ -274,6 +274,30 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 .cat-business{background:rgba(46,204,113,.1);color:#2ECC71}
 .cat-learning{background:rgba(231,76,60,.1);color:#E74C3C}
 .cat-entertainment{background:rgba(255,215,0,.1);color:#F39C12}
+/* SaaS card SNS share button */
+.card{position:relative}
+.ai-app-card{position:relative}
+.card-share-btn{position:absolute;top:10px;right:10px;z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;backdrop-filter:blur(6px);color:var(--sub);font-size:14px}
+.card-share-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.08)}
+.card-share-btn svg{width:14px;height:14px;fill:currentColor}
+/* Share overlay */
+.share-overlay{position:fixed;inset:0;background:rgba(15,15,15,.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.share-overlay.open{display:flex}
+.share-sheet{background:#fff;border-radius:20px;padding:28px 24px 24px;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(0,0,0,.25);animation:sheetIn .18s ease-out}
+@keyframes sheetIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.share-sheet h4{font-size:16px;font-weight:700;margin:0 0 4px}
+.share-sheet .share-target{font-size:13px;color:var(--sub);margin-bottom:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.share-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.share-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;font-size:12px;font-weight:600;transition:all .15s;cursor:pointer}
+.share-btn:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.share-btn .ico{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800}
+.share-copy{display:flex;gap:8px;margin-top:6px}
+.share-copy input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--sub);background:#FAFAF7}
+.share-copy button{padding:10px 14px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.share-copy button:hover{opacity:.88}
+.share-close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:var(--sub);font-size:20px;cursor:pointer}
+.share-close:hover{color:var(--ink)}
+.share-sheet{position:relative}
 </style>
 </head>
 <body>
@@ -322,26 +346,44 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       <h3 style="font-size:15px;color:var(--sub);margin-bottom:16px;font-weight:600">🏢 独立型サービス</h3>
       <div class="featured" style="grid-template-columns:repeat(3,1fr);margin-bottom:40px">
         <a class="card c-infra" href="https://puentemcp.com/" target="_blank">
+          <button class="card-share-btn" aria-label="Puente MCP Hub をシェア" onclick="openShare(event,'Puente MCP Hub','AIエージェント連携の中枢。MCP サーバーを一元管理。','https://puentemcp.com/')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://puentemcp.com/og-image.png" alt="Puente MCP Hub" loading="eager"><span class="fallback">MCP</span></div>
           <div class="body"><div class="cat">インフラ</div><h3>Puente MCP Hub</h3><p class="tag">AIエージェント連携の中枢。MCP サーバーを一元管理。</p><div class="meta"><span class="price">無料〜</span><span>puentemcp.com ↗</span></div></div>
         </a>
         <a class="card c-biz" href="https://ma-portal.net" target="_blank">
+          <button class="card-share-btn" aria-label="M&A Portal をシェア" onclick="openShare(event,'M&amp;A Portal','中小企業のM&amp;A案件をAIがマッチング。','https://ma-portal.net')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://ma-portal.net/ogp-image.svg" alt="M&A Portal" loading="eager"><span class="fallback">M&A</span></div>
           <div class="body"><div class="cat">ビジネス</div><h3>M&amp;A Portal</h3><p class="tag">中小企業のM&amp;A案件をAIがマッチング。</p><div class="meta"><span class="price">無料〜</span><span>ma-portal.net ↗</span></div></div>
         </a>
         <a class="card c-biz" href="https://hojokin-ai.org/" target="_blank">
+          <button class="card-share-btn" aria-label="補助金AI をシェア" onclick="openShare(event,'補助金AI','補助金をAIが自動分析＆専門家マッチング。','https://hojokin-ai.org/')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://hojokin-ai.org/hojokin-AI_TOP.png" alt="補助金AI" loading="eager"><span class="fallback">補</span></div>
           <div class="body"><div class="cat">ビジネス</div><h3>補助金AI</h3><p class="tag">補助金をAIが自動分析＆専門家マッチング。</p><div class="meta"><span class="price">無料〜</span><span>hojokin-ai.org ↗</span></div></div>
         </a>
         <a class="card c-biz" href="https://aiceosimulator.com/" target="_blank">
+          <button class="card-share-btn" aria-label="AI CEO Simulator をシェア" onclick="openShare(event,'AI CEO Simulator','経営判断をAIがシミュレーション。','https://aiceosimulator.com/')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://aiceosimulator.com/og-image.webp" alt="AI CEO Simulator" loading="eager"><span class="fallback">CEO</span></div>
           <div class="body"><div class="cat">ビジネス</div><h3>AI CEO Simulator</h3><p class="tag">経営判断をAIがシミュレーション。</p><div class="meta"><span class="price">無料〜</span><span>aiceosimulator.com ↗</span></div></div>
         </a>
         <a class="card c-edu" href="https://ken-ringo.com/" target="_blank">
+          <button class="card-share-btn" aria-label="KEN→RINGO をシェア" onclick="openShare(event,'KEN→RINGO','話し方の癖をAIが学習する語学AIコーチ。','https://ken-ringo.com/')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://ken-ringo.com/og-image.webp" alt="KEN→RINGO" loading="eager"><span class="fallback">語</span></div>
           <div class="body"><div class="cat">教育</div><h3>KEN→RINGO</h3><p class="tag">話し方の癖をAIが学習する語学AIコーチ。</p><div class="meta"><span class="price">15時間無料</span><span>ken-ringo.com ↗</span></div></div>
         </a>
         <a class="card c-ent" href="https://alive-casino.games/" target="_blank">
+          <button class="card-share-btn" aria-label="ALIVE Casino をシェア" onclick="openShare(event,'ALIVE Casino','AIディーラーが進行するオンラインカジノ体験。','https://alive-casino.games/')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
           <div class="thumb"><img src="https://alive-casino.games/og-image.png" alt="ALIVE Casino" loading="eager"><span class="fallback">🎰</span></div>
           <div class="body"><div class="cat">エンタメ</div><h3>ALIVE Casino</h3><p class="tag">AIディーラーが進行するオンラインカジノ体験。</p><div class="meta"><span class="price">無料〜</span><span>alive-casino.games ↗</span></div></div>
         </a>
@@ -376,7 +418,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
         <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計</h4><p>AIが事業計画・BEP・技術スタックを自動ドラフト。</p></div>
         <div class="step"><div class="num">STEP 03</div><h4>Puente 承認 → 開発</h4><p>承認後、Puente +AI実装。</p></div>
         <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認</h4><p>非公開リンクをダッシュボードで通知。あなたが OK で公開。</p></div>
-        <div class="step"><div class="num">STEP 05</div><h4>自動プロモ</h4><p>PR Times / SNS / YouTube Short まで自動配信。ご自身のSNSでも是非告知をお願い致します。</p></div>
+        <div class="step"><div class="num">STEP 05</div><h4>プロモーション</h4><p>PR Times 配信・Wix ブログ・公式 SNS 紹介投稿はプエンテ広報チームが代行。オーナーも各カードのシェアボタンから自身の SNS にワンクリック投稿できます。</p></div>
       </div>
     </div>
   </section>
@@ -412,7 +454,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
         </details>
         <details class="faq-item">
           <summary>プロモーションはどうなりますか？</summary>
-          <p>PR Times掲載、SNS投稿、YouTube Short動画まで自動配信します。併せてご自身のSNSでも告知いただくとより効果的です。</p>
+          <p><strong>PR Times プレスリリース配信・Wix ブログ掲載・プエンテ公式 SNS からの紹介投稿はプエンテ広報チームが代行</strong>します。オーナー側は、ストアトップの各 SaaS カード右上のシェアアイコンから X / Threads / Facebook / LinkedIn / note / はてブ へワンクリックで投稿可能です。ダッシュボードからは AI 生成の投稿文・OG 画像・縦横動画キットもダウンロードできます。</p>
         </details>
         <details class="faq-item">
           <summary>作ったSaaSのソースコードは貰えますか？</summary>
@@ -1360,11 +1402,18 @@ function renderAiApps(cat) {
   const apps = cat === 'all' ? _aiApps : _aiApps.filter(a => a.category === cat);
   grid.innerHTML = apps.map(a => {
     const url = 'https://' + (a.subdomain || a.slug) + '.puente-saas.com';
+    const name = escHtml(a.name || '');
+    const tagline = escHtml(a.tagline || '');
+    const nameAttr = (a.name || '').replace(/'/g, "\\'");
+    const taglineAttr = (a.tagline || '').replace(/'/g, "\\'");
     return `<a class="ai-app-card" href="${url}" target="_blank">
+      <button class="card-share-btn" aria-label="${name} をシェア" onclick="openShare(event,'${nameAttr}','${taglineAttr}','${url}')">
+        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+      </button>
       <span class="app-cat-badge cat-${a.category}">${CAT_LABELS[a.category]||a.category}</span>
       <span class="app-emoji">${a.emoji||'🚀'}</span>
-      <div class="app-name">${escHtml(a.name)}</div>
-      <div class="app-tagline">${escHtml(a.tagline)}</div>
+      <div class="app-name">${name}</div>
+      <div class="app-tagline">${tagline}</div>
       <span class="app-price">無料〜¥1,980/月</span>
     </a>`;
   }).join('');
@@ -1375,6 +1424,47 @@ function filterApps(cat) {
   renderAiApps(cat);
 }
 loadAiApps();
+
+// ---- SaaS card share ----
+const SHARE_PLATFORMS = [
+  {key:'x',label:'X',ico:'𝕏',fn:(t,u)=>`https://twitter.com/intent/tweet?text=${encodeURIComponent(t)}&url=${encodeURIComponent(u)}`},
+  {key:'threads',label:'Threads',ico:'@',fn:(t,u)=>`https://www.threads.net/intent/post?text=${encodeURIComponent(t+'\n'+u)}`},
+  {key:'facebook',label:'Facebook',ico:'f',fn:(_t,u)=>`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}`},
+  {key:'linkedin',label:'LinkedIn',ico:'in',fn:(_t,u)=>`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(u)}`},
+  {key:'note',label:'note',ico:'n',fn:(t,u)=>`https://note.com/intent/post?text=${encodeURIComponent(t+'\n'+u)}`},
+  {key:'hatebu',label:'はてブ',ico:'B!',fn:(_t,u)=>`https://b.hatena.ne.jp/entry/panel/?url=${encodeURIComponent(u)}`}
+];
+function openShare(ev, name, tagline, url) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  const text = `${name} — ${tagline}`;
+  const overlay = document.getElementById('share-overlay');
+  const urlWithUtm = (platform) => `${url}${url.includes('?')?'&':'?'}utm_source=${platform}&utm_medium=card_share&utm_campaign=puente_saas_store`;
+  document.getElementById('share-target-name').textContent = name;
+  const grid = document.getElementById('share-grid');
+  grid.innerHTML = SHARE_PLATFORMS.map(p =>
+    `<a class="share-btn" href="${p.fn(text, urlWithUtm(p.key))}" target="_blank" rel="noopener noreferrer"><span class="ico">${p.ico}</span>${p.label}</a>`
+  ).join('');
+  document.getElementById('share-url-input').value = url;
+  overlay.classList.add('open');
+}
+function closeShare(ev) {
+  if (ev && ev.target.id !== 'share-overlay' && !ev.target.classList.contains('share-close')) return;
+  document.getElementById('share-overlay').classList.remove('open');
+}
+function copyShareUrl() {
+  const input = document.getElementById('share-url-input');
+  input.select();
+  try {
+    navigator.clipboard.writeText(input.value);
+    const btn = document.getElementById('share-copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ コピー済';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch(e) {
+    document.execCommand('copy');
+  }
+}
 
 // ---- Legal pages ----
 const LEGAL = {
@@ -1488,5 +1578,20 @@ document.querySelectorAll('.thumb img').forEach(img => {
   }
 });
 </script>
+
+<!-- SNS Share overlay -->
+<div class="share-overlay" id="share-overlay" onclick="closeShare(event)">
+  <div class="share-sheet" onclick="event.stopPropagation()">
+    <button class="share-close" onclick="closeShare()" aria-label="閉じる">×</button>
+    <h4>このSaaSをシェア</h4>
+    <div class="share-target" id="share-target-name"></div>
+    <div class="share-grid" id="share-grid"></div>
+    <div class="share-copy">
+      <input id="share-url-input" type="text" readonly>
+      <button id="share-copy-btn" onclick="copyShareUrl()">URLをコピー</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
