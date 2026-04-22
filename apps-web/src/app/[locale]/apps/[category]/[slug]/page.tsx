@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase-server';
 import { trackView, recommendedForVisitor } from '@/lib/personalize';
 import SaasCard from '@/components/SaasCard';
 import SubscribeButton from '@/components/SubscribeButton';
+import SnsShareButtons from '@/components/SnsShareButtons';
 
 export async function generateMetadata(
   { params: { slug, locale } }: { params: { slug: string; locale: string } },
@@ -74,6 +75,12 @@ export default async function SaasDetail({
               Open app ↗
             </a>
           )}
+          <div className="mt-6">
+            <SnsShareButtons
+              url={`https://puente-saas.com/${locale === 'ja' ? '' : 'en/'}apps/${saas.category}/${saas.slug}`}
+              text={`${name} — ${tagline ?? ''}`}
+            />
+          </div>
         </div>
       </header>
 
