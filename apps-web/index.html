@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading... | Punete Micro SaaS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --app-color: #6C63FF;
+  --bg: #0D0D12;
+  --card: #16161E;
+  --border: #2A2A3A;
+  --text: #E8E8F0;
+  --sub: #8888AA;
+  --success: #00D68F;
+  --warn: #FFB800;
+  --danger: #FF4757;
+  --radius: 16px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* Header */
+.app-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.app-brand { display:flex; align-items:center; gap:12px; }
+.app-emoji { font-size:32px; }
+.app-name { font-size:20px; font-weight:700; }
+.app-tagline { font-size:13px; color:var(--sub); margin-top:2px; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.usage-badge {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--sub);
+}
+.usage-badge strong { color: var(--app-color); }
+
+/* Auth bar */
+.auth-bar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px;
+}
+.auth-bar a { color: var(--app-color); text-decoration:none; cursor:pointer; }
+
+/* Main */
+.main { max-width:720px; margin:0 auto; padding:32px 16px; }
+
+/* Form */
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.form-label .required { color: var(--danger); margin-left:4px; font-size:12px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--app-color);
+}
+.form-textarea { min-height: 80px; resize: vertical; }
+.form-select { appearance: none; cursor: pointer; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn-primary {
+  background: var(--app-color);
+  color: #fff;
+}
+.btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-upgrade {
+  background: linear-gradient(135deg, #FFB800, #FF6B00);
+  color: #fff;
+}
+
+/* Result */
+.result-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-top: 24px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.result-container h2 { font-size:20px; margin:16px 0 8px; color:var(--app-color); }
+.result-container h3 { font-size:16px; margin:14px 0 6px; }
+.result-container strong { color: var(--text); }
+.result-container ul, .result-container ol { padding-left: 20px; margin: 8px 0; }
+.result-container table { width:100%; border-collapse:collapse; margin:12px 0; }
+.result-container th, .result-container td { padding:8px; border:1px solid var(--border); font-size:13px; }
+.result-container th { background:rgba(255,255,255,0.04); }
+
+/* History */
+.history-list { margin-top:32px; }
+.history-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.history-item:hover { border-color: var(--app-color); }
+.history-date { font-size:12px; color:var(--sub); }
+.history-preview { font-size:14px; margin-top:4px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Pricing */
+.pricing-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0; }
+.price-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.price-card.active { border-color: var(--app-color); box-shadow:0 0 20px rgba(108,99,255,0.15); }
+.price-name { font-size:14px; font-weight:700; }
+.price-amount { font-size:28px; font-weight:800; margin:8px 0; }
+.price-amount span { font-size:14px; font-weight:400; color:var(--sub); }
+.price-limit { font-size:13px; color:var(--sub); }
+
+/* Loading spinner */
+.spinner { display:inline-block; width:20px; height:20px; border:2px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Tabs */
+.tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--card); border-radius:12px; padding:4px; }
+.tab { flex:1; padding:10px; text-align:center; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; color:var(--sub); transition:all 0.2s; }
+.tab.active { background:var(--app-color); color:#fff; }
+
+/* Limit banner */
+.limit-banner {
+  background: linear-gradient(135deg, rgba(255,184,0,0.1), rgba(255,107,0,0.1));
+  border: 1px solid rgba(255,184,0,0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.limit-banner p { font-size:14px; color:var(--warn); margin-bottom:8px; }
+
+/* Footer */
+.app-footer {
+  text-align:center; padding:24px; font-size:12px; color:var(--sub); margin-top:40px;
+  border-top:1px solid var(--border);
+}
+.app-footer a { color:var(--app-color); text-decoration:none; }
+
+/* Login modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+}
+.modal {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:32px; width:90%; max-width:400px;
+}
+.modal h2 { margin-bottom:20px; text-align:center; }
+.modal .form-group { margin-bottom:16px; }
+
+/* Responsive */
+@media (max-width:640px) {
+  .pricing-cards { grid-template-columns:1fr; }
+  .app-header { flex-direction:column; gap:8px; }
+  .header-right { width:100%; justify-content:space-between; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header" id="app-header">
+  <div class="app-brand">
+    <span class="app-emoji" id="hd-emoji">🚀</span>
+    <div>
+      <div class="app-name" id="hd-name">読み込み中...</div>
+      <div class="app-tagline" id="hd-tagline"></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="usage-badge" id="usage-badge" style="display:none">
+      今月 <strong id="usage-count">0</strong> / <span id="usage-limit">5</span> 回
+    </div>
+    <button class="btn btn-outline" id="btn-auth" onclick="showAuthModal()" style="padding:8px 16px;font-size:13px;width:auto">ログイン</button>
+  </div>
+</header>
+
+<!-- Auth info bar -->
+<div class="auth-bar" id="auth-bar" style="display:none">
+  <span>🟢 <span id="user-email"></span></span>
+  <div style="display:flex;gap:16px;">
+    <a href="https://puente-saas.com/#dashboard" target="_blank">ダッシュボード</a>
+    <a onclick="signOut()">ログアウト</a>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main">
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('generate')">✨ 生成</div>
+    <div class="tab" onclick="switchTab('history')">📋 履歴</div>
+    <div class="tab" onclick="switchTab('pricing')">💎 プラン</div>
+  </div>
+
+  <!-- Generate tab -->
+  <div id="tab-generate">
+    <div id="limit-banner" style="display:none">
+      <div class="limit-banner">
+        <p>⚠️ 今月の無料利用回数に達しました</p>
+        <button class="btn btn-upgrade" onclick="switchTab('pricing')" style="width:auto;padding:8px 20px;font-size:13px">プランをアップグレード</button>
+      </div>
+    </div>
+    <form id="app-form" onsubmit="handleGenerate(event)">
+      <div id="form-fields"></div>
+      <button type="submit" class="btn btn-primary" id="btn-generate">
+        ✨ AIで生成する
+      </button>
+    </form>
+    <div id="result-area"></div>
+  </div>
+
+  <!-- History tab -->
+  <div id="tab-history" style="display:none">
+    <div id="history-list" class="history-list">
+      <p style="color:var(--sub);text-align:center">ログインすると利用履歴が表示されます</p>
+    </div>
+  </div>
+
+  <!-- Pricing tab -->
+  <div id="tab-pricing" style="display:none">
+    <h2 style="text-align:center;margin-bottom:8px">料金プラン</h2>
+    <p style="text-align:center;color:var(--sub);margin-bottom:24px;font-size:14px">すべてのプランで同じ機能が使えます。違いは月間利用回数だけ。</p>
+    <div class="pricing-cards">
+      <div class="price-card active" id="plan-free">
+        <div class="price-name">無料</div>
+        <div class="price-amount">¥0<span>/月</span></div>
+        <div class="price-limit">月5回まで</div>
+        <button class="btn btn-outline" style="margin-top:12px;padding:8px;font-size:13px" disabled>現在のプラン</button>
+      </div>
+      <div class="price-card" id="plan-basic">
+        <div class="price-name">ベーシック</div>
+        <div class="price-amount">¥980<span>/月(税込)</span></div>
+        <div class="price-limit">月30回まで</div>
+        <button class="btn btn-primary" style="margin-top:12px;padding:8px;font-size:13px;width:100%" onclick="upgradePlan('basic')">アップグレード</button>
+      </div>
+      <div class="price-card" id="plan-standard">
+        <div class="price-name">スタンダード</div>
+        <div class="price-amount">¥1,980<span>/月(税込)</span></div>
+        <div class="price-limit">無制限</div>
+        <button class="btn btn-upgrade" style="margin-top:12px;padding:8px;font-size:13px;width:100%" onclick="upgradePlan('standard')">アップグレード</button>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--sub);margin-top:16px">
+      ※ いつでもキャンセル可能。決済はStripeで安全に処理されます。
+    </p>
+  </div>
+</div>
+
+<footer class="app-footer">
+  Powered by <a href="https://puente-saas.com" target="_blank">Punete Micro SaaS Store</a> —
+  <a href="https://puente-saas.com/#apps" target="_blank">他のAIツールを探す</a>
+</footer>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <h2 id="auth-modal-title">ログイン</h2>
+    <form onsubmit="handleAuth(event)">
+      <div class="form-group">
+        <label class="form-label">メールアドレス</label>
+        <input type="email" class="form-input" id="auth-email" required placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">パスワード</label>
+        <input type="password" class="form-input" id="auth-password" required placeholder="••••••••" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-auth-submit">ログイン</button>
+      <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--sub)">
+        アカウントがない場合は <a onclick="toggleAuthMode()" style="color:var(--app-color);cursor:pointer">新規登録</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+// ---- Config ----
+const SUPABASE_URL = 'https://rzrewjgtgazdpstnkhbt.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6cmV3amd0Z2F6ZHBzdG5raGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzI4OTksImV4cCI6MjA5MDkwODg5OX0.UmkAdfpfsLVgrzjf1qtQmAuXdsrccwiqsgQwcSGYawo';
+const API_BASE = 'https://api.puente-saas.com';
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentUser = null;
+let appConfig = null;
+let currentUsage = { used: 0, limit: 5, remaining: 5, plan: 'free' };
+let isSignUp = false;
+
+// ---- Helpers ----
+function escHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+async function apiCall(path, method='GET', body=null) {
+  const headers = { 'Content-Type': 'application/json' };
+  const session = (await _sb.auth.getSession()).data.session;
+  if (session) headers['Authorization'] = 'Bearer ' + session.access_token;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  return res.json();
+}
+
+// ---- App Init ----
+async function init() {
+  // Detect slug from subdomain
+  const host = window.location.hostname;
+  let slug = '';
+  if (host.endsWith('.puente-saas.com')) {
+    slug = host.replace('.puente-saas.com', '');
+  } else if (host === 'localhost' || host === '127.0.0.1') {
+    slug = new URLSearchParams(window.location.search).get('app') || 'recipe-ai';
+  } else {
+    slug = host.split('.')[0];
+  }
+
+  // Map subdomain to slug
+  try {
+    // First try fetching by subdomain match from API
+    const res = await fetch(API_BASE + '/api/apps');
+    const data = await res.json();
+    const apps = data.apps || [];
+    appConfig = apps.find(a => a.subdomain === slug || a.slug === slug);
+    if (!appConfig && apps.length > 0) {
+      appConfig = apps[0]; // fallback
+    }
+  } catch(e) {
+    console.error('Failed to load app config', e);
+    document.querySelector('.main').innerHTML = '<p style="text-align:center;padding:40px;color:var(--sub)">アプリの読み込みに失敗しました。</p>';
+    return;
+  }
+
+  if (!appConfig) {
+    document.querySelector('.main').innerHTML = '<p style="text-align:center;padding:40px;color:var(--sub)">アプリが見つかりません。<br><a href="https://puente-saas.com/#apps" style="color:var(--app-color)">アプリ一覧へ</a></p>';
+    return;
+  }
+
+  // Apply config to UI
+  document.title = appConfig.name + ' | Punete Micro SaaS';
+  document.documentElement.style.setProperty('--app-color', appConfig.color || '#6C63FF');
+  document.getElementById('hd-emoji').textContent = appConfig.emoji || '🚀';
+  document.getElementById('hd-name').textContent = appConfig.name;
+  document.getElementById('hd-tagline').textContent = appConfig.tagline || '';
+
+  // Update favicon
+  const fi = document.querySelector('link[rel="icon"]');
+  if (fi && appConfig.emoji) fi.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${appConfig.emoji}</text></svg>`;
+
+  // Build form
+  buildForm(appConfig.input_schema || []);
+
+  // Check auth
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    onAuthReady();
+  }
+
+  _sb.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      currentUser = session.user;
+      onAuthReady();
+    } else {
+      currentUser = null;
+      document.getElementById('auth-bar').style.display = 'none';
+      document.getElementById('btn-auth').style.display = '';
+      document.getElementById('usage-badge').style.display = 'none';
+    }
+  });
+}
+
+function buildForm(schema) {
+  const container = document.getElementById('form-fields');
+  container.innerHTML = schema.map(field => {
+    const req = field.required ? '<span class="required">*</span>' : '';
+    let input = '';
+    if (field.type === 'select') {
+      const opts = (field.options || []).map(o => `<option value="${escHtml(o)}">${escHtml(o)}</option>`).join('');
+      input = `<select class="form-select" name="${field.key}" ${field.required?'required':''}><option value="">選択してください</option>${opts}</select>`;
+    } else if (field.type === 'textarea') {
+      input = `<textarea class="form-textarea" name="${field.key}" placeholder="${escHtml(field.placeholder||'')}" ${field.required?'required':''}></textarea>`;
+    } else if (field.type === 'number') {
+      input = `<input type="number" class="form-input" name="${field.key}" placeholder="${escHtml(field.placeholder||'')}" ${field.required?'required':''}>`;
+    } else {
+      input = `<input type="text" class="form-input" name="${field.key}" placeholder="${escHtml(field.placeholder||'')}" ${field.required?'required':''}>`;
+    }
+    return `<div class="form-group"><label class="form-label">${escHtml(field.label)}${req}</label>${input}</div>`;
+  }).join('');
+}
+
+async function onAuthReady() {
+  document.getElementById('auth-bar').style.display = 'flex';
+  document.getElementById('btn-auth').style.display = 'none';
+  document.getElementById('user-email').textContent = currentUser.email;
+  document.getElementById('auth-modal').style.display = 'none';
+
+  // Load usage
+  if (appConfig) {
+    try {
+      const usage = await apiCall('/api/apps/' + appConfig.slug + '/usage');
+      currentUsage = usage;
+      document.getElementById('usage-badge').style.display = '';
+      document.getElementById('usage-count').textContent = usage.used;
+      document.getElementById('usage-limit').textContent = usage.limit === -1 ? '∞' : usage.limit;
+
+      // Show limit banner
+      if (usage.limit !== -1 && usage.remaining <= 0) {
+        document.getElementById('limit-banner').style.display = '';
+        document.getElementById('btn-generate').disabled = true;
+      } else {
+        document.getElementById('limit-banner').style.display = 'none';
+        document.getElementById('btn-generate').disabled = false;
+      }
+
+      // Update pricing active card
+      updatePricingUI(usage.plan);
+    } catch(e) {}
+  }
+}
+
+function updatePricingUI(plan) {
+  ['free','basic','standard'].forEach(p => {
+    const card = document.getElementById('plan-' + p);
+    if (!card) return;
+    card.classList.toggle('active', p === plan);
+    const btn = card.querySelector('button');
+    if (p === plan) {
+      btn.textContent = '現在のプラン';
+      btn.disabled = true;
+      btn.className = 'btn btn-outline';
+      btn.style.cssText = 'margin-top:12px;padding:8px;font-size:13px;width:100%';
+    }
+  });
+}
+
+// ---- Generate ----
+async function handleGenerate(e) {
+  e.preventDefault();
+  if (!currentUser) { showAuthModal(); return; }
+
+  const form = document.getElementById('app-form');
+  const formData = new FormData(form);
+  const body = {};
+  for (const [k,v] of formData.entries()) body[k] = v;
+
+  const btn = document.getElementById('btn-generate');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> AI生成中...';
+  btn.disabled = true;
+
+  try {
+    const res = await apiCall('/api/apps/' + appConfig.slug + '/generate', 'POST', body);
+    if (res.error === 'usage_limit_exceeded') {
+      document.getElementById('limit-banner').style.display = '';
+      document.getElementById('result-area').innerHTML = `
+        <div class="limit-banner" style="margin-top:20px">
+          <p>⚠️ ${escHtml(res.message)}</p>
+          <button class="btn btn-upgrade" onclick="switchTab('pricing')" style="width:auto;padding:8px 20px;font-size:13px">プランをアップグレード</button>
+        </div>`;
+      return;
+    }
+    if (res.error) {
+      document.getElementById('result-area').innerHTML = `<div class="result-container" style="border-color:var(--danger)">エラー: ${escHtml(res.error)}</div>`;
+      return;
+    }
+
+    // Render markdown-ish output
+    const html = renderMarkdown(res.output);
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-container">${html}</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-outline" onclick="copyResult()" style="flex:1;padding:10px;font-size:13px">📋 コピー</button>
+        <button class="btn btn-outline" onclick="document.getElementById('result-area').innerHTML=''" style="flex:1;padding:10px;font-size:13px">🗑 クリア</button>
+      </div>`;
+
+    // Update usage display
+    document.getElementById('usage-count').textContent = res.used;
+    currentUsage.used = res.used;
+    currentUsage.remaining = res.remaining;
+    if (res.limit !== -1 && res.remaining <= 0) {
+      document.getElementById('limit-banner').style.display = '';
+    }
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="result-container" style="border-color:var(--danger)">通信エラーが発生しました。もう一度お試しください。</div>`;
+  } finally {
+    btn.innerHTML = orig;
+    btn.disabled = (currentUsage.limit !== -1 && currentUsage.remaining <= 0);
+  }
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^\- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/<\/ul>\s*<ul>/g, '')
+    .replace(/\n{2,}/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+function copyResult() {
+  const el = document.querySelector('.result-container');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ コピーしました';
+    setTimeout(() => btn.textContent = '📋 コピー', 2000);
+  });
+}
+
+// ---- History ----
+async function loadHistory() {
+  if (!currentUser || !appConfig) {
+    document.getElementById('history-list').innerHTML = '<p style="color:var(--sub);text-align:center">ログインすると利用履歴が表示されます</p>';
+    return;
+  }
+  const res = await apiCall('/api/apps/' + appConfig.slug + '/history');
+  const list = res.history || [];
+  if (list.length === 0) {
+    document.getElementById('history-list').innerHTML = '<p style="color:var(--sub);text-align:center">まだ利用履歴がありません</p>';
+    return;
+  }
+  document.getElementById('history-list').innerHTML = list.map((h,i) => `
+    <div class="history-item" onclick="showHistoryDetail(${i})">
+      <div class="history-date">${new Date(h.created_at).toLocaleString('ja-JP')}</div>
+      <div class="history-preview">${escHtml((h.output||'').slice(0,100))}</div>
+    </div>
+  `).join('');
+  window._historyData = list;
+}
+
+function showHistoryDetail(idx) {
+  const h = window._historyData?.[idx];
+  if (!h) return;
+  switchTab('generate');
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-container">${renderMarkdown(h.output)}</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-outline" onclick="copyResult()" style="flex:1;padding:10px;font-size:13px">📋 コピー</button>
+    </div>`;
+}
+
+// ---- Auth ----
+function showAuthModal() {
+  document.getElementById('auth-modal').style.display = 'flex';
+}
+
+function toggleAuthMode() {
+  isSignUp = !isSignUp;
+  document.getElementById('auth-modal-title').textContent = isSignUp ? '新規登録' : 'ログイン';
+  document.getElementById('btn-auth-submit').textContent = isSignUp ? '新規登録' : 'ログイン';
+}
+
+async function handleAuth(e) {
+  e.preventDefault();
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('btn-auth-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    let result;
+    if (isSignUp) {
+      result = await _sb.auth.signUp({ email, password });
+    } else {
+      result = await _sb.auth.signInWithPassword({ email, password });
+    }
+    if (result.error) {
+      alert(result.error.message);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isSignUp ? '新規登録' : 'ログイン';
+  }
+}
+
+async function signOut() {
+  await _sb.auth.signOut();
+  window.location.reload();
+}
+
+// ---- Tabs ----
+function switchTab(tab) {
+  ['generate','history','pricing'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['generate','history','pricing'][i] === tab);
+  });
+  if (tab === 'history') loadHistory();
+}
+
+// ---- Upgrade ----
+async function upgradePlan(plan) {
+  if (!currentUser) { showAuthModal(); return; }
+  // Redirect to Stripe checkout via API
+  try {
+    const res = await apiCall('/api/apps/' + appConfig.slug + '/checkout', 'POST', { plan });
+    if (res.url) window.location.href = res.url;
+    else alert('チェックアウトの作成に失敗しました');
+  } catch(e) {
+    alert('エラーが発生しました');
+  }
+}
+
+// ---- Boot ----
+init();
+</script>
+</body>
+</html>

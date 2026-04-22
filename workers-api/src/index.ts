@@ -6,19 +6,20 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import type { Env } from './types';
-import { sb, getUserId, isSuperAdmin } from './supabase';
+import { sb, sbAdmin, sbUser, getUserId, isSuperAdmin } from './supabase';
 import {
   createConnectAccount,
   createPlanPrices,
   createCheckoutSession,
   createInitialFeeCheckout,
   handleWebhook,
+  stripeClient,
 } from './stripe';
 import { issueInitialDiscount } from './coupons';
 import { analyzeBrief } from './ai-analyzer';
 import { runPromoQueue } from './promo';
 
-const app = new Hono<{ Bindings: Env; Variables: { userId: string } }>();
+const app = new Hono<{ Bindings: Env; Variables: { userId: string; authHeader: string } }>();
 
 app.use('*', logger());
 app.use('*', secureHeaders({
@@ -32,6 +33,7 @@ app.use('*', secureHeaders({
     frameAncestors: ["'none'"],
   },
   xFrameOptions: 'DENY',
+  crossOriginResourcePolicy: 'cross-origin',
   permissionsPolicy: { camera: [], microphone: [], geolocation: [] },
 }));
 const ALLOWED_ORIGINS = [
@@ -42,14 +44,24 @@ const ALLOWED_ORIGINS = [
   'https://admin.puente-saas.com',
 ];
 app.use('/api/*', cors({
-  origin: (origin) => ALLOWED_ORIGINS.includes(origin) ? origin : '',
+  origin: (origin) => {
+    if (ALLOWED_ORIGINS.includes(origin)) return origin;
+    // Allow all *.puente-saas.com subdomains (for Micro SaaS apps)
+    if (origin && /^https:\/\/[a-z0-9-]+\.puente-saas\.com$/.test(origin)) return origin;
+    // Allow Pages preview URLs
+    if (origin && /^https:\/\/[a-z0-9-]+\.puente-apps\.pages\.dev$/.test(origin)) return origin;
+    return '';
+  },
   credentials: true,
   allowHeaders: ['authorization', 'content-type', 'stripe-signature'],
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
-// Public checkout も同じ CORS (credentials 不要だが origin 制限は必要)
 app.use('/public/*', cors({
-  origin: (origin) => ALLOWED_ORIGINS.includes(origin) ? origin : '',
+  origin: (origin) => {
+    if (ALLOWED_ORIGINS.includes(origin)) return origin;
+    if (origin && /^https:\/\/[a-z0-9-]+\.puente-saas\.com$/.test(origin)) return origin;
+    return '';
+  },
   allowHeaders: ['content-type'],
   allowMethods: ['POST', 'OPTIONS'],
 }));
@@ -57,22 +69,120 @@ app.use('/public/*', cors({
 // ---------- Health ----------
 app.get('/', (c) => c.json({ service: 'puente-store-api', env: c.env.ENVIRONMENT }));
 
+// ---------- Screenshot proxy (public, cached 24h) ----------
+const ALLOWED_SCREENSHOT_DOMAINS = [
+  'puentemcp.com', 'ma-portal.net', 'hojokin-ai.org',
+  'aiceosimulator.com', 'ken-ringo.com', 'alive-casino.games',
+];
+app.get('/api/screenshot', async (c) => {
+  const url = c.req.query('url');
+  if (!url) return c.json({ error: 'url param required' }, 400);
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_SCREENSHOT_DOMAINS.includes(parsed.hostname)) {
+      return c.json({ error: 'domain not allowed' }, 403);
+    }
+  } catch { return c.json({ error: 'invalid url' }, 400); }
+
+  const thumbUrl = `https://image.thum.io/get/width/640/crop/400/${url}`;
+
+  // Check Workers Cache API first
+  const cacheKey = new Request(c.req.url);
+  const cache = caches.default;
+  let cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
+  const resp = await fetch(thumbUrl, {
+    headers: { 'User-Agent': 'PuenteBot/1.0' },
+  });
+  if (!resp.ok) return c.json({ error: 'upstream error' }, 502);
+
+  const img = await resp.arrayBuffer();
+  const ct = resp.headers.get('content-type') || 'image/png';
+  const response = new Response(img, {
+    headers: {
+      'Content-Type': ct,
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+    },
+  });
+  // Store in cache for next requests
+  c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
+});
+
 // ---------- Webhook (署名検証は stripe.ts 側) ----------
 app.post('/stripe/webhook', async (c) => handleWebhook(c.env, c.req.raw));
 
+// ---------- Admin: force re-analyze (temporary, auth by Stripe secret) ----------
+app.post('/admin/reanalyze/:id', async (c) => {
+  const key = c.req.header('x-admin-key');
+  if (key !== c.env.STRIPE_SECRET_KEY) return c.json({ error: 'forbidden' }, 403);
+  const id = c.req.param('id');
+  const { data: saas } = await sbAdmin(c.env).from('saas_projects').select('id,brief').eq('id', id).single();
+  if (!saas) return c.json({ error: 'not found' }, 404);
+  const { analyzeBrief } = await import('./ai-analyzer');
+
+  const env = c.env;
+  const analysisPromise = analyzeBrief(env, id, saas.brief).catch((err: Error) => {
+    console.error('Admin re-analysis failed:', err.message, err.stack);
+    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
+  });
+
+  try {
+    const ctx = c.executionCtx;
+    if (ctx && typeof (ctx as any).waitUntil === 'function') {
+      (ctx as any).waitUntil(analysisPromise);
+    }
+  } catch (e) {
+    console.error('waitUntil setup failed:', e);
+  }
+
+  return c.json({ message: 'AI分析を再開しました', saas_id: id });
+});
+
+// ---------- Admin: force auto-dev pipeline (auth by Stripe secret) ----------
+app.post('/admin/auto-dev/:id', async (c) => {
+  const key = c.req.header('x-admin-key');
+  if (key !== c.env.STRIPE_SECRET_KEY) return c.json({ error: 'forbidden' }, 403);
+  const id = c.req.param('id');
+  const { data: saas } = await sbAdmin(c.env)
+    .from('saas_projects')
+    .select('id,brief,ai_plan,company_id,companies(owner_id)')
+    .eq('id', id)
+    .single();
+  if (!saas) return c.json({ error: 'not found' }, 404);
+  const ownerId = (saas as any).companies?.owner_id || saas.company_id;
+  const { runAutoDev } = await import('./auto-dev');
+  const result = await runAutoDev(c.env, id, saas.brief, saas.ai_plan, ownerId);
+  return c.json({ result });
+});
+
 // ---------- auth middleware ----------
 const auth = async (c: any, next: any) => {
-  const userId = await getUserId(c.env, c.req.header('authorization') ?? null);
+  const authHeader = c.req.header('authorization') ?? null;
+  const userId = await getUserId(c.env, authHeader);
   if (!userId) return c.json({ error: 'unauthorized' }, 401);
   c.set('userId', userId);
+  c.set('authHeader', authHeader);
   await next();
 };
+// Helper: get user-authenticated Supabase client from context
+const sbu = (c: any) => sbUser(c.env, c.get('authHeader'));
+
+// ========== Me (profile) ==========
+app.get('/api/me', auth, async (c) => {
+  const uid = c.get('userId');
+  const { data } = await sbu(c).from('profiles').select('id,role,display_name,avatar_url').eq('id', uid).single();
+  return c.json(data ?? { id: uid, role: 'user' });
+});
 
 // ========== Companies ==========
 app.post('/api/companies', auth, async (c) => {
   const uid = c.get('userId');
   const body = await c.req.json();
-  const { data, error } = await sb(c.env)
+  const { data, error } = await sbu(c)
     .from('companies')
     .insert({
       owner_id: uid,
@@ -87,7 +197,6 @@ app.post('/api/companies', auth, async (c) => {
     .select()
     .single();
   if (error) return c.json({ error: error.message }, 400);
-  // 80%OFF クーポンを初期発行
   const coupon = await issueInitialDiscount(c.env, data.id);
   return c.json({ company: data, coupon });
 });
@@ -96,11 +205,10 @@ app.patch('/api/companies/:id/invoice', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
   const { invoice_registration_number } = await c.req.json();
-  // T + 13桁 の簡易バリデーション
   if (invoice_registration_number && !/^T\d{13}$/.test(invoice_registration_number)) {
     return c.json({ error: 'invalid invoice registration number format (T + 13 digits)' }, 400);
   }
-  const { data, error } = await sb(c.env)
+  const { data, error } = await sbu(c)
     .from('companies')
     .update({
       invoice_registration_number,
@@ -118,14 +226,14 @@ app.patch('/api/companies/:id/invoice', auth, async (c) => {
 app.post('/api/companies/:id/connect', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
-  const { data: company } = await sb(c.env)
+  const { data: company } = await sbu(c)
     .from('companies')
     .select('id,owner_id')
     .eq('id', id)
     .eq('owner_id', uid)
     .single();
   if (!company) return c.json({ error: 'not found' }, 404);
-  const { data: profile } = await sb(c.env).from('profiles').select('email').eq('id', uid).single();
+  const { data: profile } = await sbu(c).from('profiles').select('email').eq('id', uid).single();
   const result = await createConnectAccount(c.env, id, profile?.email ?? '');
   return c.json(result);
 });
@@ -135,9 +243,7 @@ app.post('/api/companies/:id/initial-fee-checkout', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
   const { coupon_code } = await c.req.json();
-
-  // 1社1回制約
-  const { data: company } = await sb(c.env)
+  const { data: company } = await sbu(c)
     .from('companies')
     .select('id,first_launch_at')
     .eq('id', id)
@@ -145,10 +251,9 @@ app.post('/api/companies/:id/initial-fee-checkout', auth, async (c) => {
     .single();
   if (!company) return c.json({ error: 'not found' }, 404);
   if (company.first_launch_at) return c.json({ error: '初期費用は既に支払い済みです' }, 409);
-
-  let amount = 330000; // 30万 + 税
+  let amount = 330000;
   if (coupon_code) {
-    const { data: coupon } = await sb(c.env)
+    const { data: coupon } = await sbu(c)
       .from('coupons')
       .select('discount_percent,used_at')
       .eq('company_id', id)
@@ -156,7 +261,6 @@ app.post('/api/companies/:id/initial-fee-checkout', auth, async (c) => {
       .single();
     if (coupon && !coupon.used_at) amount = Math.round(amount * (1 - coupon.discount_percent / 100));
   }
-
   const result = await createInitialFeeCheckout(c.env, {
     companyId: id,
     amountJpy: amount,
@@ -167,55 +271,236 @@ app.post('/api/companies/:id/initial-fee-checkout', auth, async (c) => {
 });
 
 // ========== SaaS Projects ==========
+// 企画投稿 → 自動でAI分析トリガー
 app.post('/api/saas', auth, async (c) => {
   const uid = c.get('userId');
   const body = await c.req.json();
-  const { data: company } = await sb(c.env)
-    .from('companies')
-    .select('id')
-    .eq('owner_id', uid)
-    .eq('id', body.company_id)
-    .single();
-  if (!company) return c.json({ error: 'company not found' }, 404);
+  const db = sbu(c);
 
-  const { data, error } = await sb(c.env)
+  // company_id がない場合は自動作成（LP簡易フロー用）
+  let companyId = body.company_id;
+  if (!companyId) {
+    // ユーザーの既存 company を探すか新規作成
+    const { data: existing } = await db
+      .from('companies')
+      .select('id')
+      .eq('owner_id', uid)
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      companyId = existing.id;
+    } else {
+      const { data: profile } = await db.from('profiles').select('email,display_name').eq('id', uid).single();
+      const { data: newCompany, error: compErr } = await db
+        .from('companies')
+        .insert({
+          owner_id: uid,
+          legal_name: profile?.display_name || profile?.email || 'N/A',
+          representative_name: profile?.display_name || 'N/A',
+        })
+        .select()
+        .single();
+      if (compErr) return c.json({ error: compErr.message }, 400);
+      companyId = newCompany.id;
+    }
+  } else {
+    const { data: company } = await db
+      .from('companies')
+      .select('id')
+      .eq('owner_id', uid)
+      .eq('id', companyId)
+      .single();
+    if (!company) return c.json({ error: 'company not found' }, 404);
+  }
+
+  const slug = (body.name || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
+
+  const brief = {
+    name: body.name,
+    category: body.category || 'business',
+    overview: body.overview || body.summary || '',
+    target_users: body.target_users || '',
+    features: Array.isArray(body.features) ? body.features : (body.desired_features || '').split('\n').filter(Boolean),
+  };
+
+  const { data, error } = await db
     .from('saas_projects')
     .insert({
-      company_id: body.company_id,
-      slug: body.slug,
+      company_id: companyId,
+      slug,
       name: body.name,
-      name_en: body.name_en ?? null,
       tagline: body.tagline ?? null,
       category: body.category ?? 'business',
       tags: body.tags ?? [],
-      brief: body.brief ?? {},
+      brief,
       status: 'draft',
     })
+    .select()
+    .single();
+  if (error) return c.json({ error: error.message }, 400);
+
+  // ★ 自動でAI分析をバックグラウンドトリガー（非同期）
+  const saasId = data.id;
+  const env = c.env;
+  const analysisPromise = analyzeBrief(env, saasId, brief).catch((err: Error) => {
+    console.error('AI analysis failed:', err.message, err.stack);
+    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', saasId);
+  });
+
+  // Use Hono executionCtx.waitUntil if available, otherwise fall back to fire-and-forget
+  try {
+    const ctx = c.executionCtx;
+    if (ctx && typeof (ctx as any).waitUntil === 'function') {
+      (ctx as any).waitUntil(analysisPromise);
+    } else {
+      // Fallback: await inline (may hit timeout for long analyses, but at least it runs)
+      analysisPromise; // fire-and-forget
+    }
+  } catch (e) {
+    console.error('waitUntil setup failed:', e);
+  }
+
+  return c.json({ saas: data, message: 'AI分析を開始しました' });
+});
+
+// 手動AI分析トリガー（リトライ用） — waitUntil で非同期実行
+app.post('/api/saas/:id/analyze', auth, async (c) => {
+  const id = c.req.param('id');
+  const { data: saas } = await sbu(c)
+    .from('saas_projects')
+    .select('id,brief')
+    .eq('id', id)
+    .single();
+  if (!saas) return c.json({ error: 'not found' }, 404);
+
+  const env = c.env;
+  const analysisPromise = analyzeBrief(env, id, saas.brief).catch((err: Error) => {
+    console.error('AI re-analysis failed:', err.message, err.stack);
+    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
+  });
+
+  try {
+    const ctx = c.executionCtx;
+    if (ctx && typeof (ctx as any).waitUntil === 'function') {
+      (ctx as any).waitUntil(analysisPromise);
+    }
+  } catch (e) {
+    console.error('waitUntil setup failed:', e);
+  }
+
+  return c.json({ message: 'AI分析を再開しました', saas_id: id });
+});
+
+// ユーザーの全プロジェクト一覧
+app.get('/api/saas', auth, async (c) => {
+  const uid = c.get('userId');
+  const { data, error } = await sbu(c)
+    .from('saas_projects')
+    .select('id,name,slug,category,status,ai_plan,brief,created_at,updated_at,preview_url,public_url')
+    .order('created_at', { ascending: false });
+
+  if (error) return c.json({ error: error.message }, 400);
+
+  // RLSで owner のプロジェクトだけ返る（super_adminなら全件）
+  return c.json({ projects: data });
+});
+
+// プロジェクト詳細
+app.get('/api/saas/:id', auth, async (c) => {
+  const id = c.req.param('id');
+  const { data, error } = await sbu(c)
+    .from('saas_projects')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error || !data) return c.json({ error: 'not found' }, 404);
+  return c.json({ saas: data });
+});
+
+// 管理者: ステータス変更（手動オーバーライド用）
+app.patch('/api/saas/:id/status', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+  const id = c.req.param('id');
+  const { status } = await c.req.json();
+  const { data, error } = await sbu(c)
+    .from('saas_projects')
+    .update({ status })
+    .eq('id', id)
     .select()
     .single();
   if (error) return c.json({ error: error.message }, 400);
   return c.json({ saas: data });
 });
 
-app.post('/api/saas/:id/analyze', auth, async (c) => {
+// 修正再投稿（needs_improvement / rejected の��）
+app.put('/api/saas/:id/resubmit', auth, async (c) => {
   const id = c.req.param('id');
-  const { data: saas } = await sb(c.env)
+
+  // 現在のプロジェクトを取得（RLS でオーナーのみ）
+  const { data: existing } = await sbu(c)
     .from('saas_projects')
-    .select('id,brief')
+    .select('id,status,brief')
     .eq('id', id)
     .single();
-  if (!saas) return c.json({ error: 'not found' }, 404);
-  const plan = await analyzeBrief(c.env, id, saas.brief);
-  return c.json({ plan });
+  if (!existing) return c.json({ error: 'not found' }, 404);
+  if (!['needs_improvement', 'rejected', 'draft'].includes(existing.status)) {
+    return c.json({ error: 'このステータスでは修正再投稿できません' }, 400);
+  }
+
+  const body = await c.req.json();
+  const { name, category, overview, target_users, features } = body;
+  if (!name || !overview) {
+    return c.json({ error: 'サービス名と概要は必須です' }, 400);
+  }
+
+  // Brief を更新
+  const updatedBrief = {
+    name,
+    category: category || existing.brief?.category || 'business',
+    overview,
+    target_users: target_users || '',
+    features: Array.isArray(features) ? features.filter(Boolean) : [],
+  };
+
+  // ステータスを ai_analyzing にリセットし、ai_plan をクリア
+  const { error: updateErr } = await sbAdmin(c.env)
+    .from('saas_projects')
+    .update({
+      brief: updatedBrief,
+      name: name,
+      category: updatedBrief.category,
+      ai_plan: null,
+      status: 'ai_analyzing',
+    })
+    .eq('id', id);
+  if (updateErr) return c.json({ error: updateErr.message }, 500);
+
+  // AI 再分析をバックグラウンドで実行
+  const env = c.env;
+  const analysisPromise = analyzeBrief(env, id, updatedBrief as any).catch((err: Error) => {
+    console.error('AI resubmit analysis failed:', err.message, err.stack);
+    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
+  });
+  try {
+    const ctx = c.executionCtx;
+    if (ctx && typeof (ctx as any).waitUntil === 'function') {
+      (ctx as any).waitUntil(analysisPromise);
+    }
+  } catch (e) {
+    console.error('waitUntil setup failed:', e);
+  }
+
+  return c.json({ message: '修正を保存し、AI再分析を開始しました', saas_id: id });
 });
 
 app.post('/api/saas/:id/approve', auth, async (c) => {
   const uid = c.get('userId');
   if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
   const id = c.req.param('id');
-  const { data, error } = await sb(c.env)
+  const { data, error } = await sbu(c)
     .from('saas_projects')
-    .update({ status: 'in_development', approved_by: uid, approved_at: new Date().toISOString() })
+    .update({ status: 'approved', approved_by: uid, approved_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();
@@ -227,19 +512,18 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
   const uid = c.get('userId');
   if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
   const id = c.req.param('id');
-  const { data: saas } = await sb(c.env).from('saas_projects').select('name').eq('id', id).single();
+  const db = sbu(c);
+  const { data: saas } = await db.from('saas_projects').select('name').eq('id', id).single();
   if (!saas) return c.json({ error: 'not found' }, 404);
-  // Stripe Product / Price を生成（ユーザーがまだ作っていなければ）
   const prices = await createPlanPrices(c.env, id, saas.name);
-  // saas_plans テーブルに価格ID をフラッシュ
   for (const p of prices.plans) {
     const unit = { Free: 0, Basic: 980, Standard: 1980, Pro: 2980 }[p.name] ?? 0;
-    await sb(c.env).from('saas_plans').upsert(
+    await db.from('saas_plans').upsert(
       { saas_id: id, name: p.name, price_jpy: unit, stripe_price_id: p.price_id },
       { onConflict: 'saas_id,name' },
     );
   }
-  const { data, error } = await sb(c.env)
+  const { data, error } = await db
     .from('saas_projects')
     .update({ status: 'published', published_at: new Date().toISOString() })
     .eq('id', id)
@@ -272,20 +556,21 @@ app.post('/public/saas/:id/checkout', async (c) => {
 app.get('/api/companies/:id/revenue', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
-  const { data: company } = await sb(c.env)
+  const db = sbu(c);
+  const { data: company } = await db
     .from('companies')
     .select('id')
     .eq('id', id)
     .eq('owner_id', uid)
     .maybeSingle();
   if (!company && !(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
-  const { data: monthly } = await sb(c.env)
+  const { data: monthly } = await db
     .from('v_monthly_revenue')
     .select('*')
     .eq('company_id', id)
     .order('month', { ascending: false })
     .limit(24);
-  const { data: balance } = await sb(c.env)
+  const { data: balance } = await db
     .from('v_company_connect_balance')
     .select('*')
     .eq('company_id', id)
@@ -293,10 +578,64 @@ app.get('/api/companies/:id/revenue', auth, async (c) => {
   return c.json({ monthly, balance });
 });
 
+// ユーザーの売上取得（company_id不要の簡易エンドポイント）
+app.get('/api/my/revenue', auth, async (c) => {
+  const uid = c.get('userId');
+  const db = sbu(c);
+  const { data: company } = await db
+    .from('companies')
+    .select('id')
+    .eq('owner_id', uid)
+    .limit(1)
+    .maybeSingle();
+  if (!company) return c.json({ monthly: [], balance: null });
+  const { data: monthly } = await db
+    .from('v_monthly_revenue')
+    .select('*')
+    .eq('company_id', company.id)
+    .order('month', { ascending: false })
+    .limit(12);
+  const { data: balance } = await db
+    .from('v_company_connect_balance')
+    .select('*')
+    .eq('company_id', company.id)
+    .maybeSingle();
+  return c.json({ monthly, balance });
+});
+
+// ユーザーが利用中のMicro SaaSアプリ一覧
+app.get('/api/my/apps', auth, async (c) => {
+  const uid = c.get('userId');
+  const db = sbu(c);
+  // サブスク一覧（active のみ）
+  const { data: subs } = await db
+    .from('saas_subscriptions')
+    .select('id,app_id,plan,status,created_at')
+    .eq('user_id', uid)
+    .eq('status', 'active');
+
+  if (!subs || subs.length === 0) return c.json({ apps: [] });
+
+  // アプリ情報を取得
+  const appIds = subs.map(s => s.app_id);
+  const { data: apps } = await sb(c.env)
+    .from('saas_apps')
+    .select('id,slug,name,tagline,emoji,color,subdomain')
+    .in('id', appIds);
+
+  const appMap = new Map((apps || []).map(a => [a.id, a]));
+  const result = subs.map(s => ({
+    ...s,
+    app: appMap.get(s.app_id) || null,
+  }));
+  return c.json({ apps: result });
+});
+
 app.post('/api/companies/:id/payouts/request', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
-  const { data: company } = await sb(c.env)
+  const db = sbu(c);
+  const { data: company } = await db
     .from('companies')
     .select('id')
     .eq('id', id)
@@ -304,7 +643,7 @@ app.post('/api/companies/:id/payouts/request', auth, async (c) => {
     .single();
   if (!company) return c.json({ error: 'forbidden' }, 403);
   const body = await c.req.json();
-  const { data, error } = await sb(c.env)
+  const { data, error } = await db
     .from('payouts')
     .insert({
       company_id: id,
@@ -322,22 +661,542 @@ app.post('/api/companies/:id/payouts/request', auth, async (c) => {
 app.get('/api/admin/overview', auth, async (c) => {
   const uid = c.get('userId');
   if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
-  const s = sb(c.env);
-  const [{ count: companies }, { count: saas }, { count: subs }, { data: monthly }] = await Promise.all([
+  const s = sbAdmin(c.env); // service role for admin queries (companies table needs service role access)
+  const [
+    { count: companies },
+    { count: totalProjects },
+    { count: publishedSaas },
+    { count: activeSubs },
+    { count: canceledSubs },
+    { data: monthly },
+    { data: statusBreakdown },
+  ] = await Promise.all([
     s.from('companies').select('*', { count: 'exact', head: true }),
+    s.from('saas_projects').select('*', { count: 'exact', head: true }),
     s.from('saas_projects').select('*', { count: 'exact', head: true }).eq('status', 'published'),
     s.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    s.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled'),
     s.from('v_monthly_revenue').select('*').order('month', { ascending: false }).limit(12),
+    s.from('saas_projects').select('status'),
   ]);
-  return c.json({ companies, saas_published: saas, active_subs: subs, monthly });
+
+  // ステータス別集計
+  const statusCounts: Record<string, number> = {};
+  (statusBreakdown || []).forEach((p: any) => {
+    statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+  });
+
+  // MRR計算（直近月の合計）
+  const latestMonth = monthly?.[0];
+  const mrr = latestMonth ? latestMonth.gmv : 0;
+  const arr = mrr * 12;
+
+  // 退会率
+  const totalSubsEver = (activeSubs || 0) + (canceledSubs || 0);
+  const churnRate = totalSubsEver > 0 ? ((canceledSubs || 0) / totalSubsEver * 100).toFixed(1) : '0.0';
+
+  // 課金転換率
+  const conversionRate = totalSubsEver > 0 && companies ? ((activeSubs || 0) / (companies || 1) * 100).toFixed(1) : '0.0';
+
+  return c.json({
+    companies,
+    total_projects: totalProjects,
+    saas_published: publishedSaas,
+    active_subs: activeSubs,
+    canceled_subs: canceledSubs,
+    mrr,
+    arr,
+    churn_rate: parseFloat(churnRate as string),
+    conversion_rate: parseFloat(conversionRate as string),
+    monthly,
+    status_counts: statusCounts,
+  });
 });
 
-// ========== Promo cron (super_admin or scheduled event only) ==========
+// 管理者: 全プロジェクト一覧（ステータスフィルター付き）
+app.get('/api/admin/projects', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+  const status = c.req.query('status');
+  let query = sbAdmin(c.env)
+    .from('saas_projects')
+    .select('id,name,slug,category,status,ai_plan,brief,created_at,updated_at,company_id')
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ projects: data });
+});
+
+// 管理者: 全ユーザー一覧
+app.get('/api/admin/users', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+  const { data, error } = await sbAdmin(c.env)
+    .from('profiles')
+    .select('id,email,display_name,role,created_at')
+    .order('created_at', { ascending: false });
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ users: data });
+});
+
+// 管理者: 全会社一覧
+app.get('/api/admin/companies', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+  const { data, error } = await sbAdmin(c.env)
+    .from('companies')
+    .select('id,owner_id,legal_name,representative_name,stripe_connect_status,created_at')
+    .order('created_at', { ascending: false });
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ companies: data });
+});
+
+// ========== Promo cron ==========
 app.post('/internal/promo/run', auth, async (c) => {
   const uid = c.get('userId');
   if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
   const result = await runPromoQueue(c.env);
   return c.json(result);
+});
+
+// ========== Micro SaaS App Engine ==========
+
+// 公開: アプリ一覧（公開済みのみ）
+app.get('/api/apps', async (c) => {
+  const { data, error } = await sb(c.env)
+    .from('saas_apps')
+    .select('id,slug,name,tagline,description,category,emoji,color,subdomain,is_official,plans,usage_limits')
+    .eq('is_published', true)
+    .order('is_official', { ascending: false })
+    .order('created_at', { ascending: true });
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ apps: data });
+});
+
+// 公開: アプリ詳細（slug） — preview token 付きなら非公開アプリも取得可
+app.get('/api/apps/:slug', async (c) => {
+  const slug = c.req.param('slug');
+  const previewToken = c.req.query('preview');
+
+  // preview token がある場合は sbAdmin（RLS bypass）で非公開アプリも取得
+  const client = previewToken ? sbAdmin(c.env) : sb(c.env);
+
+  let query = client
+    .from('saas_apps')
+    .select('id,slug,name,tagline,description,category,emoji,color,subdomain,is_official,plans,usage_limits,input_schema,output_format,prompt_template,is_published,preview_token')
+    .eq('slug', slug);
+
+  // preview token がなければ公開済みのみ（RLSでも制限されるが明示的に）
+  if (!previewToken) {
+    query = query.eq('is_published', true);
+  }
+
+  const { data, error } = await query.single();
+  if (error || !data) return c.json({ error: 'app not found' }, 404);
+
+  // preview token 検証: 非公開アプリはトークン一致必須
+  if (!data.is_published && data.preview_token !== previewToken) {
+    return c.json({ error: 'app not found' }, 404);
+  }
+
+  // prompt_template, preview_token, is_published はフロントに返さない
+  const { prompt_template, preview_token: _pt, is_published: _ip, ...publicData } = data as any;
+  return c.json(publicData);
+});
+
+// 認証: 使用回数チェック
+app.get('/api/apps/:slug/usage', auth, async (c) => {
+  const uid = c.get('userId');
+  const slug = c.req.param('slug');
+
+  // アプリID取得
+  const { data: app } = await sb(c.env)
+    .from('saas_apps').select('id,usage_limits').eq('slug', slug).single();
+  if (!app) return c.json({ error: 'app not found' }, 404);
+
+  // ユーザーのプラン取得
+  const { data: sub } = await sbu(c)
+    .from('saas_subscriptions')
+    .select('plan')
+    .eq('app_id', app.id).eq('user_id', uid).eq('status', 'active')
+    .maybeSingle();
+  const plan = sub?.plan || 'free';
+
+  // 今月の使用回数
+  const { data: usageData } = await sb(c.env).rpc('get_monthly_usage', { p_user_id: uid, p_app_id: app.id });
+  const used = typeof usageData === 'number' ? usageData : 0;
+
+  const limits = (app.usage_limits as any) || { free: 3, basic: 30, standard: 100, premium: -1 };
+  const limit = limits[plan] ?? 5;
+  const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
+
+  return c.json({ plan, used, limit, remaining });
+});
+
+// ========== DALL-E コーデイラスト生成 ==========
+async function generateCoordinateImage(
+  env: Env,
+  aiOutput: string,
+  inputs: { weather?: string; temperature?: string; gender?: string; style?: string; schedule?: string }
+): Promise<string | null> {
+  if (!env.OPENAI_API_KEY) return null;
+
+  // AIの出力からアイテム情報を抽出してDALL-Eプロンプトに変換
+  const items: string[] = [];
+  const patterns = [
+    /\*\*トップス\*\*:\s*(.+)/i,
+    /\*\*ボトムス\*\*:\s*(.+)/i,
+    /\*\*アウター\*\*:\s*(.+)/i,
+    /\*\*シューズ\*\*:\s*(.+)/i,
+    /\*\*小物\*\*:\s*(.+)/i,
+  ];
+  for (const pat of patterns) {
+    const m = aiOutput.match(pat);
+    if (m && m[1] && !m[1].includes('不要') && !m[1].includes('なし')) {
+      items.push(m[1].trim().replace(/\(.+?\)/g, '').trim());
+    }
+  }
+  if (items.length === 0) return null;
+
+  const genderLabel = inputs.gender === 'male' ? '男性' : inputs.gender === 'female' ? '女性' : '人物';
+  const styleLabel = inputs.style || 'カジュアル';
+
+  const dallePrompt = `Fashion illustration, full-body outfit coordination for a stylish ${genderLabel === '男性' ? 'man' : 'woman'}, ${styleLabel} style. Wearing: ${items.join(', ')}. Clean white background, fashion magazine editorial style, modern Japanese street fashion illustration, soft lighting, watercolor-like artistic rendering. No text or labels.`;
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: dallePrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error('DALL-E error:', resp.status, await resp.text());
+      return null;
+    }
+
+    const result: any = await resp.json();
+    return result?.data?.[0]?.url || null;
+  } catch (err) {
+    console.error('DALL-E fetch error:', err);
+    return null;
+  }
+}
+
+// ========== 商品検索リンク生成ヘルパー ==========
+interface ShoppingLink {
+  keyword: string;
+  rakutenUrl: string;
+  amazonUrl: string;
+}
+
+function buildRakutenSearchLink(keyword: string, affiliateId?: string): string {
+  const encoded = encodeURIComponent(keyword);
+  if (affiliateId) {
+    return `https://hb.afl.rakuten.co.jp/hgc/${affiliateId}/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F${encoded}%2F&m=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F${encoded}%2F`;
+  }
+  return `https://search.rakuten.co.jp/search/mall/${encoded}/`;
+}
+
+function buildAmazonSearchLink(keyword: string, associateTag?: string): string {
+  const encoded = encodeURIComponent(keyword);
+  return associateTag
+    ? `https://www.amazon.co.jp/s?k=${encoded}&tag=${associateTag}`
+    : `https://www.amazon.co.jp/s?k=${encoded}`;
+}
+
+// 商品検索リンク API（公開）
+app.get('/api/products/search', async (c) => {
+  const keyword = c.req.query('q') || '';
+  if (!keyword) return c.json({ error: 'q is required' }, 400);
+  const rakutenUrl = buildRakutenSearchLink(keyword, c.env.RAKUTEN_AFFILIATE_ID);
+  const amazonUrl = buildAmazonSearchLink(keyword, c.env.AMAZON_ASSOCIATE_TAG);
+  return c.json({ keyword, rakutenUrl, amazonUrl });
+});
+
+// ========== ファッション用: AIコーデ → 購入リンク生成 ==========
+function enrichFashionWithLinks(
+  env: Env,
+  aiOutput: string
+): { products: Record<string, ShoppingLink> } {
+  // AIの出力からアイテムカテゴリを抽出
+  const categories: Record<string, string> = {};
+  const patterns = [
+    { label: 'トップス', regex: /\*\*トップス\*\*:\s*(.+)/i },
+    { label: 'ボトムス', regex: /\*\*ボトムス\*\*:\s*(.+)/i },
+    { label: 'アウター', regex: /\*\*アウター\*\*:\s*(.+)/i },
+    { label: 'シューズ', regex: /\*\*シューズ\*\*:\s*(.+)/i },
+    { label: '小物', regex: /\*\*小物\*\*:\s*(.+)/i },
+  ];
+  for (const p of patterns) {
+    const m = aiOutput.match(p.regex);
+    if (m && m[1] && !m[1].includes('不要') && !m[1].includes('なし')) {
+      categories[p.label] = m[1].trim().replace(/\(.+?\)/g, '').trim();
+    }
+  }
+
+  const results: Record<string, ShoppingLink> = {};
+  for (const [label, keyword] of Object.entries(categories)) {
+    results[label] = {
+      keyword,
+      rakutenUrl: buildRakutenSearchLink(keyword, env.RAKUTEN_AFFILIATE_ID),
+      amazonUrl: buildAmazonSearchLink(keyword, env.AMAZON_ASSOCIATE_TAG),
+    };
+  }
+  return { products: results };
+}
+
+// 認証: AI 生成エンドポイント
+app.post('/api/apps/:slug/generate', auth, async (c) => {
+  const uid = c.get('userId');
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+
+  // アプリ取得
+  const { data: app } = await sb(c.env)
+    .from('saas_apps')
+    .select('id,name,prompt_template,input_schema,usage_limits')
+    .eq('slug', slug).eq('is_published', true).single();
+  if (!app) return c.json({ error: 'app not found' }, 404);
+
+  // プラン & 使用回数チェック
+  const { data: sub } = await sbu(c)
+    .from('saas_subscriptions')
+    .select('plan')
+    .eq('app_id', app.id).eq('user_id', uid).eq('status', 'active')
+    .maybeSingle();
+  const plan = sub?.plan || 'free';
+
+  // Bug 3 fix: Auto-create free subscription if none exists (so app appears in 利用中のSaaS)
+  // Must use sbAdmin to bypass RLS (no INSERT policy on saas_subscriptions)
+  if (!sub) {
+    await sbAdmin(c.env).from('saas_subscriptions').upsert(
+      { user_id: uid, app_id: app.id, plan: 'free', status: 'active' },
+      { onConflict: 'saas_subscriptions_app_id_user_id_key' },
+    );
+  }
+
+  const { data: usageCount } = await sb(c.env).rpc('get_monthly_usage', { p_user_id: uid, p_app_id: app.id });
+  const used = typeof usageCount === 'number' ? usageCount : 0;
+  const limits = (app.usage_limits as any) || { free: 3, basic: 30, standard: 100, premium: -1 };
+  const limit = limits[plan] ?? 5;
+
+  if (limit !== -1 && used >= limit) {
+    return c.json({
+      error: 'usage_limit_exceeded',
+      message: `今月の利用回数（${limit}回）に達しました。プランをアップグレードしてください。`,
+      used, limit, plan,
+    }, 429);
+  }
+
+  // プロンプト構築: テンプレートの {{key}} を入力値で置換
+  let prompt = app.prompt_template || '';
+  const inputSchema = (app.input_schema as any[]) || [];
+  for (const field of inputSchema) {
+    const val = body[field.key] ?? '';
+    prompt = prompt.replace(new RegExp(`\\{\\{${field.key}\\}\\}`, 'g'), String(val));
+  }
+
+  // ファッション系アプリの場合: プロンプトに購入リンク指示を追加
+  const isFashionApp = slug === 'fashion-ai';
+  if (isFashionApp) {
+    prompt += `\n\n重要: 各アイテムは具体的なブランド名・色・素材を含めて、検索しやすいキーワードで提案してください。`;
+  }
+
+  // Anthropic Claude 呼び出し
+  const Anthropic = (await import('@anthropic-ai/sdk')).default;
+  const client = new Anthropic({ apiKey: c.env.ANTHROPIC_API_KEY });
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const output = message.content
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('\n');
+
+  // ファッション系: 購入リンク生成 + DALL-Eイラスト生成（並列実行）
+  let products: Record<string, ShoppingLink> | undefined;
+  let illustrationUrl: string | null = null;
+  if (isFashionApp) {
+    const [linksResult, imageResult] = await Promise.all([
+      Promise.resolve().then(() => {
+        try {
+          const enriched = enrichFashionWithLinks(c.env, output);
+          return Object.keys(enriched.products).length > 0 ? enriched.products : undefined;
+        } catch { return undefined; }
+      }),
+      generateCoordinateImage(c.env, output, body).catch(() => null),
+    ]);
+    products = linksResult;
+    illustrationUrl = imageResult;
+  }
+
+  // 使用回数記録
+  await sbu(c).from('app_usage').insert({
+    user_id: uid,
+    app_id: app.id,
+    input: body,
+    output: output.slice(0, 5000),
+    tokens_used: (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0),
+  });
+
+  return c.json({
+    output,
+    products,
+    illustration_url: illustrationUrl,
+    used: used + 1,
+    limit,
+    remaining: limit === -1 ? -1 : Math.max(0, limit - used - 1),
+  });
+});
+
+// 認証: 使用履歴
+app.get('/api/apps/:slug/history', auth, async (c) => {
+  const uid = c.get('userId');
+  const slug = c.req.param('slug');
+
+  const { data: app } = await sb(c.env).from('saas_apps').select('id').eq('slug', slug).single();
+  if (!app) return c.json({ error: 'app not found' }, 404);
+
+  const { data } = await sbu(c)
+    .from('app_usage')
+    .select('id,input,output,created_at')
+    .eq('app_id', app.id).eq('user_id', uid)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  return c.json({ history: data || [] });
+});
+
+// ===== Micro SaaS App Stripe Checkout =====
+// POST /api/apps/:slug/checkout — Create Stripe Checkout Session for app subscription
+app.post('/api/apps/:slug/checkout', auth, async (c) => {
+  const uid = c.get('userId');
+  const slug = c.req.param('slug');
+  const body = await c.req.json<{ plan: 'basic' | 'standard' | 'premium' }>();
+  const planKey = body.plan;
+
+  if (!planKey || !['basic', 'standard', 'premium'].includes(planKey)) {
+    return c.json({ error: 'plan must be "basic", "standard", or "premium"' }, 400);
+  }
+
+  // Get app info
+  const { data: appData } = await sb(c.env)
+    .from('saas_apps')
+    .select('id,slug,name,emoji,stripe_product_id')
+    .eq('slug', slug)
+    .single();
+  if (!appData) return c.json({ error: 'app not found' }, 404);
+
+  // Get user email from profile or auth
+  const { data: profile } = await sbu(c)
+    .from('profiles')
+    .select('id,display_name')
+    .eq('id', uid)
+    .single();
+
+  // Get user's Supabase auth email via admin (requires service role key)
+  let customerEmail = '';
+  try {
+    const { data: { user: authUser } } = await sbAdmin(c.env).auth.admin.getUserById(uid);
+    customerEmail = authUser?.email || '';
+  } catch(e) {
+    // Fallback: try to get email from profiles table
+    const { data: emailProfile } = await sb(c.env).from('profiles').select('email').eq('id', uid).single();
+    customerEmail = emailProfile?.email || '';
+  }
+  if (!customerEmail) return c.json({ error: 'ユーザーメールアドレスが取得できません' }, 400);
+
+  const stripe = stripeClient(c.env);
+
+  // Plan config
+  const planConfig: Record<string, { name: string; price: number }> = {
+    basic:    { name: 'Basic（月30回）', price: 980 },
+    standard: { name: 'Standard（月100回）', price: 1980 },
+    premium:  { name: 'Premium（無制限）', price: 2980 },
+  };
+  const plan = planConfig[planKey];
+
+  // Lazy-create Stripe Product + Prices if not exists
+  let productId = appData.stripe_product_id;
+  if (!productId) {
+    const product = await stripe.products.create({
+      name: `${appData.emoji} ${appData.name} — Punete Micro SaaS`,
+      metadata: { app_id: appData.id, slug: appData.slug },
+    });
+    productId = product.id;
+    await sb(c.env)
+      .from('saas_apps')
+      .update({ stripe_product_id: productId })
+      .eq('id', appData.id);
+  }
+
+  // Find or create price for this plan
+  const existingPrices = await stripe.prices.list({
+    product: productId,
+    active: true,
+    limit: 10,
+  });
+  let priceId = existingPrices.data.find(
+    (p) => p.unit_amount === plan.price && p.recurring?.interval === 'month'
+  )?.id;
+
+  if (!priceId) {
+    const newPrice = await stripe.prices.create({
+      product: productId,
+      unit_amount: plan.price,
+      currency: 'jpy',
+      recurring: { interval: 'month' },
+      tax_behavior: 'inclusive',
+      metadata: { app_id: appData.id, plan_name: planKey },
+    });
+    priceId = newPrice.id;
+  }
+
+  // Determine origin for success/cancel URLs
+  const origin = c.req.header('origin') || `https://${slug}.puente-saas.com`;
+
+  // Create Checkout Session (no Connect split for official Puente apps — 100% Puente revenue)
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: [{ price: priceId, quantity: 1 }],
+    customer_email: customerEmail,
+    allow_promotion_codes: true,
+    success_url: `${origin}?checkout=success`,
+    cancel_url: `${origin}?checkout=cancel`,
+    subscription_data: {
+      metadata: {
+        app_id: appData.id,
+        app_slug: appData.slug,
+        plan_name: planKey,
+        user_id: uid,
+        kind: 'app_subscription',
+      },
+    },
+    metadata: {
+      app_id: appData.id,
+      app_slug: appData.slug,
+      plan_name: planKey,
+      user_id: uid,
+      kind: 'app_subscription',
+    },
+  });
+
+  return c.json({ url: session.url, session_id: session.id });
 });
 
 // ---------- fallback ----------

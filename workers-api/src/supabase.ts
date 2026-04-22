@@ -9,6 +9,14 @@ export function sb(env: Env): SupabaseClient {
   });
 }
 
+/** Service-role client — bypasses RLS, use for admin queries and auth.admin.* calls */
+export function sbAdmin(env: Env): SupabaseClient {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+  return createClient(env.SUPABASE_URL, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 /** Authenticated client — pass user's JWT for RLS context */
 export function sbAuth(env: Env, token: string): SupabaseClient {
   return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -24,6 +32,19 @@ export async function getUserId(env: Env, authHeader: string | null): Promise<st
   const client = sbAuth(env, token);
   const { data } = await client.auth.getUser(token);
   return data.user?.id ?? null;
+}
+
+/** JWT トークンを取得（auth header から） */
+export function getToken(authHeader: string | null): string | null {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  return authHeader.slice(7);
+}
+
+/** ユーザー認証済みの Supabase クライアント（RLS が auth.uid() で動作する） */
+export function sbUser(env: Env, authHeader: string | null): SupabaseClient {
+  const token = getToken(authHeader);
+  if (!token) return sb(env); // fallback to anon
+  return sbAuth(env, token);
 }
 
 export async function isSuperAdmin(env: Env, userId: string): Promise<boolean> {

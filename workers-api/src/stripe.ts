@@ -4,7 +4,7 @@
 
 import Stripe from 'stripe';
 import type { Env } from './types';
-import { sb } from './supabase';
+import { sb, sbAdmin } from './supabase';
 
 const PUENTE_SHARE = 0.70;     // プエンテ売上比率
 const USER_SHARE = 0.30;       // ユーザー売上比率
@@ -164,7 +164,8 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
     return new Response(`signature verification failed: ${(err as Error).message}`, { status: 400 });
   }
 
-  const s = sb(env);
+  // Use sbAdmin (service role) to bypass RLS — Webhook has no user session
+  const s = sbAdmin(env);
 
   switch (event.type) {
     case 'account.updated': {
@@ -182,31 +183,78 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object as Stripe.Subscription;
-      const saasId = sub.metadata.saas_id;
-      const planName = sub.metadata.plan_name;
       const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
-      await s.from('subscriptions').upsert(
-        {
-          saas_id: saasId,
-          end_user_email: (sub as any).customer_email ?? '',
-          stripe_customer_id: customerId,
-          stripe_subscription_id: sub.id,
-          plan_name: planName,
-          status: sub.status,
-          current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-          canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
-        },
-        { onConflict: 'stripe_subscription_id' },
-      );
+
+      // Handle Micro SaaS App subscriptions (kind=app_subscription)
+      if (sub.metadata.kind === 'app_subscription') {
+        const appId = sub.metadata.app_id;
+        const userId = sub.metadata.user_id;
+
+        // Resolve plan name from actual price amount (handles upgrades/downgrades via Stripe)
+        let planName = sub.metadata.plan_name || 'basic';
+        const priceAmount = sub.items?.data?.[0]?.price?.unit_amount;
+        if (typeof priceAmount === 'number') {
+          const priceToPlan: Record<number, string> = { 980: 'basic', 1980: 'standard', 2980: 'premium' };
+          planName = priceToPlan[priceAmount] || planName;
+        }
+
+        // Determine status: canceled/past_due → handle gracefully
+        let dbStatus = sub.status === 'active' || sub.status === 'trialing' ? 'active' : sub.status;
+        // If subscription canceled at period end, keep active until period ends
+        if (sub.cancel_at_period_end && sub.status === 'active') {
+          dbStatus = 'active'; // still active until period_end
+        }
+
+        if (appId && userId) {
+          await s.from('saas_subscriptions').upsert(
+            {
+              user_id: userId,
+              app_id: appId,
+              plan: planName,
+              stripe_subscription_id: sub.id,
+              stripe_customer_id: customerId,
+              status: dbStatus,
+              current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+            },
+            { onConflict: 'saas_subscriptions_app_id_user_id_key' },
+          );
+        }
+      } else {
+        // Legacy SaaS project subscriptions
+        const saasId = sub.metadata.saas_id;
+        const planName = sub.metadata.plan_name;
+        await s.from('subscriptions').upsert(
+          {
+            saas_id: saasId,
+            end_user_email: (sub as any).customer_email ?? '',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: sub.id,
+            plan_name: planName,
+            status: sub.status,
+            current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+            canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+          },
+          { onConflict: 'stripe_subscription_id' },
+        );
+      }
       break;
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
-      await s
-        .from('subscriptions')
-        .update({ status: 'canceled', canceled_at: new Date().toISOString() })
-        .eq('stripe_subscription_id', sub.id);
+      // Handle both app subscriptions and legacy subscriptions
+      if (sub.metadata.kind === 'app_subscription') {
+        await s
+          .from('saas_subscriptions')
+          .update({ status: 'canceled', plan: 'free' })
+          .eq('stripe_subscription_id', sub.id);
+      } else {
+        await s
+          .from('subscriptions')
+          .update({ status: 'canceled', canceled_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', sub.id);
+      }
       break;
     }
     case 'charge.succeeded': {
@@ -252,6 +300,27 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
           .update({ first_launch_at: new Date().toISOString() })
           .eq('id', companyId)
           .is('first_launch_at', null);
+      }
+      // App subscription checkout completed — ensure saas_subscriptions row exists
+      if (sess.metadata?.kind === 'app_subscription') {
+        const appId = sess.metadata.app_id;
+        const userId = sess.metadata.user_id;
+        const planName = sess.metadata.plan_name;
+        const subId = typeof sess.subscription === 'string' ? sess.subscription : '';
+        const custId = typeof sess.customer === 'string' ? sess.customer : '';
+        if (appId && userId && subId) {
+          await s.from('saas_subscriptions').upsert(
+            {
+              user_id: userId,
+              app_id: appId,
+              plan: planName || 'basic',
+              stripe_subscription_id: subId,
+              stripe_customer_id: custId,
+              status: 'active',
+            },
+            { onConflict: 'saas_subscriptions_app_id_user_id_key' },
+          );
+        }
       }
       break;
     }

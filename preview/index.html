@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root{--bg:#FAFAF7;--ink:#0F0F0F;--sub:#525252;--line:#E5E5E0;--accent:#FF5A1F;--accent2:#1A4CD1;--card:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -18,7 +19,7 @@ html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP','Inte
 header{position:sticky;top:0;background:rgba(250,250,247,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);z-index:50}
 .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{display:flex;align-items:center;gap:10px;font-family:'Zen Kaku Gothic New';font-weight:900;font-size:18px;letter-spacing:-.02em;text-decoration:none;color:inherit}
-.logo .mark{width:28px;height:28px;background:var(--ink);color:var(--accent);display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:900;font-size:18px}
+.logo .mark{width:28px;height:28px;background:var(--ink);color:var(--accent);display:flex;align-items:center;justify-content:center;border-radius:7px;font-weight:900;font-size:18px;flex-shrink:0}
 .nav ul{display:flex;gap:28px;list-style:none;align-items:center}
 .nav a{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}
 .nav a:hover{color:var(--accent)}
@@ -40,11 +41,16 @@ header{position:sticky;top:0;background:rgba(250,250,247,.85);backdrop-filter:bl
 section{padding:80px 0}
 .section-title{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:36px;letter-spacing:-.02em;margin-bottom:8px}
 .section-sub{color:var(--sub);margin-bottom:40px}
-.featured{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:900px}
+.featured{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:all .2s;cursor:pointer;text-decoration:none;color:inherit}
 .card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:var(--ink)}
-.card .thumb{aspect-ratio:16/10;background:linear-gradient(135deg,#FF5A1F22,#1A4CD122);display:flex;align-items:center;justify-content:center;font-family:'Zen Kaku Gothic New';font-weight:900;font-size:42px;color:var(--ink);letter-spacing:-.02em}
-.card.c3 .thumb{background:linear-gradient(135deg,#0F0F0F,#FF5A1F);color:#fff}
+.card .thumb{aspect-ratio:16/10;background:linear-gradient(135deg,#FF5A1F22,#1A4CD122);display:flex;align-items:center;justify-content:center;font-family:'Zen Kaku Gothic New';font-weight:900;font-size:42px;color:var(--ink);letter-spacing:-.02em;overflow:hidden;position:relative}
+.card .thumb img{width:100%;height:100%;object-fit:cover;object-position:top;position:absolute;inset:0;transition:opacity .3s}
+.card .thumb .fallback{position:relative;z-index:1}
+.card.c-infra .thumb{background:linear-gradient(135deg,#0a2463,#3e92cc);color:#fff}
+.card.c-biz .thumb{background:linear-gradient(135deg,#1a1a2e,#FF5A1F);color:#fff}
+.card.c-edu .thumb{background:linear-gradient(135deg,#0F0F0F,#FF5A1F);color:#fff}
+.card.c-ent .thumb{background:linear-gradient(135deg,#2d0036,#ff2e63);color:#fff}
 .card .body{padding:20px}
 .card .cat{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
 .card h3{font-size:17px;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
@@ -81,6 +87,12 @@ section{padding:80px 0}
 .split-card .pct{font-family:'Inter';font-weight:900;font-size:64px;letter-spacing:-.04em;line-height:1}
 .split-card .label{font-weight:700;margin-top:8px}
 .split-card .note{font-size:13px;margin-top:12px;opacity:.7}
+.faq-list{max-width:800px}
+.faq-item{border-bottom:1px solid var(--line);padding:0}
+.faq-item summary{padding:20px 0;font-weight:600;font-size:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.faq-item summary::after{content:"+";font-size:20px;font-weight:400;color:var(--sub);transition:transform .2s}
+.faq-item[open] summary::after{content:"−"}
+.faq-item p{padding:0 0 20px;color:var(--sub);font-size:14px;line-height:1.7}
 footer{background:var(--ink);color:#aaa;padding:64px 0 32px;margin-top:80px}
 footer .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
 footer h5{color:#fff;font-size:13px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em}
@@ -115,7 +127,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 .dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
 .dash-header .user-info{display:flex;align-items:center;gap:12px}
 .dash-header .avatar{width:40px;height:40px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
-.dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:40px}
+.dash-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:24px}
 .dash-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
 .dash-card .dc-num{font-family:'Inter';font-weight:700;font-size:32px;color:var(--accent)}
 .dash-card .dc-label{font-size:13px;color:var(--sub);margin-top:4px}
@@ -125,18 +137,143 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 .idea-item .idea-status{font-size:12px;padding:4px 10px;border-radius:999px;font-weight:600}
 .idea-item .idea-status.draft{background:#FFF3E0;color:#E65100}
 .idea-item .idea-status.ai_analyzing{background:#E3F2FD;color:#1565C0}
+.idea-item .idea-status.pending_approval{background:#FFF9C4;color:#F57F17}
+.idea-item .idea-status.approved{background:#E0F2F1;color:#00695C}
+.idea-item .idea-status.auto_dev{background:#E8F5E9;color:#1B5E20;font-weight:700}
+.idea-item .idea-status.needs_improvement{background:#FFF8E1;color:#F57F17}
+.idea-item .idea-status.in_development{background:#E8EAF6;color:#283593}
 .idea-item .idea-status.published{background:#E8F5E9;color:#2E7D32}
+.idea-item .idea-status.rejected{background:#FFEBEE;color:#C62828}
+.idea-item .idea-status.preview{background:#F3E5F5;color:#6A1B9A}
+.idea-item .idea-status.paused{background:#ECEFF1;color:#546E7A}
+.idea-item{cursor:pointer;transition:border-color .2s}
+.idea-item:hover{border-color:var(--accent)}
+.idea-item.expanded{border-color:var(--accent);background:#FFFAF5}
+/* AI Plan Detail */
+.ai-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px}
+.ai-card h4{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--accent)}
+.ai-card p,.ai-card li{font-size:14px;line-height:1.6;color:var(--sub)}
+.ai-card ul{list-style:none;padding:0}
+.ai-card li::before{content:"▸ ";color:var(--accent);font-weight:700}
+.score-bar{display:flex;gap:16px;margin:12px 0}
+.score-item{flex:1;text-align:center}
+.score-num{font-family:'Inter';font-weight:900;font-size:36px;line-height:1}
+.score-num.high{color:#2E7D32}
+.score-num.mid{color:#F57F17}
+.score-num.low{color:#C62828}
+.score-label{font-size:12px;color:var(--sub);margin-top:4px}
+/* 利用中 SaaS */
+.my-apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:40px}
+.my-app-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;transition:border-color .2s,transform .15s}
+.my-app-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.my-app-emoji{font-size:36px;flex-shrink:0}
+.my-app-info{flex:1;min-width:0}
+.my-app-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-app-tagline{font-size:12px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-app-plan{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:#E8F5E9;color:#2E7D32;margin-top:6px;display:inline-block}
+.my-app-open{flex-shrink:0;color:var(--accent);font-size:20px;font-weight:700}
+/* パンくずナビ */
+.breadcrumb{font-size:13px;color:var(--sub);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.breadcrumb a{color:var(--accent);text-decoration:none;font-weight:500}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb .sep{color:var(--line)}
+.dash-tab-bar{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--line)}
+.dash-tab{padding:10px 20px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+.dash-tab:hover{color:var(--ink)}
+.dash-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+/* Admin table */
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{background:var(--ink);color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.admin-table td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.admin-table tr:hover td{background:#f9f9f5}
+.status-chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.admin-score{font-family:'Inter';font-weight:700;font-size:16px}
 
+/* ===== Tablet ===== */
 @media(max-width:900px){
-  .featured{grid-template-columns:1fr}
+  .featured{grid-template-columns:repeat(2,1fr)}
   .process{grid-template-columns:1fr 1fr}
   .plans{grid-template-columns:1fr}
   .kpi{grid-template-columns:repeat(2,1fr)}
   .split-grid{grid-template-columns:1fr}
-  .dash-cards{grid-template-columns:1fr}
+  .enduser-plans{grid-template-columns:repeat(2,1fr)!important}
+  .dash-cards{grid-template-columns:repeat(2,1fr)}
+  #admin-kpi,#admin-section .dash-cards{grid-template-columns:repeat(2,1fr)!important}
   footer .grid{grid-template-columns:1fr 1fr;gap:32px}
   .nav ul{display:none}
+  .admin-table{font-size:11px}
+  .admin-table th,.admin-table td{padding:6px 8px}
+  .dash-header{flex-direction:column;align-items:flex-start;gap:16px}
+  .my-apps-grid{grid-template-columns:1fr 1fr}
 }
+/* ===== Mobile ===== */
+@media(max-width:600px){
+  .wrap{padding:0 16px}
+  .hero{padding:56px 0 48px}
+  .hero h1{font-size:32px}
+  .hero p.lead{font-size:16px}
+  .hero .ctas{flex-direction:column}
+  .hero .ctas .btn{width:100%;justify-content:center}
+  .kpi{grid-template-columns:1fr 1fr;gap:12px}
+  .kpi .num{font-size:24px}
+  section{padding:48px 0}
+  .section-title{font-size:26px}
+  .featured{grid-template-columns:1fr}
+  .process{grid-template-columns:1fr}
+  .process .step{padding:18px}
+  .enduser-plans{grid-template-columns:1fr!important}
+  .pricing{border-radius:12px;margin:20px 0;padding:48px 0}
+  .plan .price-num{font-size:36px}
+  .split{padding:28px}
+  .split-card .pct{font-size:48px}
+  footer .grid{grid-template-columns:1fr;gap:24px}
+  footer .copy{flex-direction:column;gap:8px;text-align:center}
+  /* Dashboard mobile */
+  .dash-cards{grid-template-columns:repeat(2,1fr);gap:10px}
+  .dash-card{padding:16px}
+  .dash-card .dc-num{font-size:24px}
+  .dash-card .dc-label{font-size:11px}
+  .dash-header{flex-direction:column;align-items:stretch;gap:12px}
+  .dash-header>div:last-child{display:flex;flex-direction:column;gap:8px}
+  .dash-header .btn{width:100%;justify-content:center;padding:12px}
+  .dash-tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dash-tab{white-space:nowrap;padding:10px 14px;font-size:13px}
+  .my-apps-grid{grid-template-columns:1fr}
+  .my-app-card{padding:16px}
+  .idea-item{flex-direction:column;align-items:flex-start;gap:10px}
+  .score-bar{flex-wrap:wrap;gap:8px}
+  .score-item{min-width:60px}
+  .score-num{font-size:28px}
+  /* Modal mobile */
+  .modal{padding:28px 20px;max-width:100%;width:94%;border-radius:16px}
+  /* Nav mobile */
+  .nav{height:56px}
+  .logo{font-size:15px}
+  .logo .mark{width:24px;height:24px;font-size:15px}
+  #ai-apps-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+/* AI App catalog */
+.cat-tab{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--sub);font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit}
+.cat-tab.active,.cat-tab:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ai-app-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 16px;text-align:center;transition:all .2s;cursor:pointer;text-decoration:none;color:var(--text);display:block}
+.ai-app-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 24px rgba(108,99,255,.12)}
+.ai-app-card .app-emoji{font-size:36px;display:block;margin-bottom:8px}
+.ai-app-card .app-name{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.ai-app-card .app-tagline{font-size:12px;color:var(--sub);line-height:1.4}
+.ai-app-card .app-price{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(108,99,255,.08);color:var(--accent)}
+.ai-app-card .app-cat-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;margin-bottom:6px}
+/* Mobile menu */
+.mobile-menu-btn{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:4px;color:var(--ink)}
+.nav ul.mobile-open{display:flex!important;position:fixed;inset:0;top:56px;background:var(--bg);flex-direction:column;padding:24px;gap:0;z-index:99;border-top:1px solid var(--line)}
+.nav ul.mobile-open li{padding:16px 0;border-bottom:1px solid var(--line)}
+.nav ul.mobile-open a{font-size:16px}
+.nav ul.mobile-open .cta{display:block;text-align:center;margin-top:8px}
+@media(max-width:900px){.mobile-menu-btn{display:block}}
+.cat-daily{background:rgba(78,205,196,.1);color:#4ECDC4}
+.cat-creator{background:rgba(155,89,182,.1);color:#9B59B6}
+.cat-business{background:rgba(46,204,113,.1);color:#2ECC71}
+.cat-learning{background:rgba(231,76,60,.1);color:#E74C3C}
+.cat-entertainment{background:rgba(255,215,0,.1);color:#F39C12}
 </style>
 </head>
 <body>
@@ -144,10 +281,12 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 <header>
   <div class="wrap nav">
     <a href="/" class="logo"><span class="mark">P</span> Puente Micro SaaS Store</a>
-    <ul>
-      <li><a href="#apps">アプリを探す</a></li>
-      <li><a href="#process">仕組み</a></li>
-      <li><a href="#pricing">料金</a></li>
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()" id="mobile-menu-btn" aria-label="メニュー">☰</button>
+    <ul id="nav-menu">
+      <li><a href="#apps" onclick="showLPSection('apps')">アプリを探す</a></li>
+      <li><a href="#process" onclick="showLPSection('process')">仕組み</a></li>
+      <li><a href="#faq" onclick="showLPSection('faq')">FAQ</a></li>
+      <li><a href="#pricing" onclick="showLPSection('pricing')">料金</a></li>
       <li><a href="#" id="nav-login" onclick="showAuth('login')">ログイン</a></li>
       <li id="nav-user" style="display:none"><a href="#" id="nav-dashboard" onclick="showDashboard()">ダッシュボード</a></li>
       <li id="nav-logout-li" style="display:none"><a href="#" onclick="doLogout()">ログアウト</a></li>
@@ -160,7 +299,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
   <section class="hero">
     <div class="wrap">
       <h1>アイデアを<br><span class="accent">3日</span>でSaaSに。</h1>
-      <p class="lead">アイディアはあるけど、自分でSaaSを作れない方へ。AIが解析・設計し、ボリビアチームが開発・運用。あなたはアイデアを書くだけで、Micro SaaS のオーナーに。</p>
+      <p class="lead">アイディアはあるけど、自分でSaaSを作れない方へ。AIが解析・設計し、Puenteが開発・運用。あなたはアイデアを書くだけで、Micro SaaS のオーナーに。</p>
       <div class="ctas">
         <button class="btn btn-primary" onclick="handleCTA()">企画を投稿する →</button>
         <a href="#apps" class="btn btn-ghost">公開中のSaaSを見る</a>
@@ -177,26 +316,53 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
   <section id="apps">
     <div class="wrap">
       <h2 class="section-title">注目の Micro SaaS</h2>
-      <p class="section-sub">AI が設計し、ボリビアチームが開発した、稼働中のサブスク型サービス</p>
-      <div class="featured">
-        <a class="card c1" href="https://hojokin-ai.org/" target="_blank">
-          <div class="thumb">補</div>
-          <div class="body">
-            <div class="cat">Business / Finance</div>
-            <h3>補助金AI</h3>
-            <p class="tag">貴社に合った補助金を AI が自動分析。申請代行の専門家も AI が即時マッチング。成果報酬なしの透明な月額固定。</p>
-            <div class="meta"><span class="price">無料プランあり</span><span>hojokin-ai.org ↗</span></div>
-          </div>
+      <p class="section-sub">Puente開発のサブスク型サービス — 全26サービス</p>
+
+      <!-- 既存の独立ドメイン型サービス -->
+      <h3 style="font-size:15px;color:var(--sub);margin-bottom:16px;font-weight:600">🏢 独立型サービス</h3>
+      <div class="featured" style="grid-template-columns:repeat(3,1fr);margin-bottom:40px">
+        <a class="card c-infra" href="https://puentemcp.com/" target="_blank">
+          <div class="thumb"><img src="https://puentemcp.com/og-image.png" alt="Puente MCP Hub" loading="eager"><span class="fallback">MCP</span></div>
+          <div class="body"><div class="cat">インフラ</div><h3>Puente MCP Hub</h3><p class="tag">AIエージェント連携の中枢。MCP サーバーを一元管理。</p><div class="meta"><span class="price">無料〜</span><span>puentemcp.com ↗</span></div></div>
         </a>
-        <a class="card c3" href="https://ken-ringo.com/" target="_blank">
-          <div class="thumb">語</div>
-          <div class="body">
-            <div class="cat">語学 AI コーチ</div>
-            <h3>KEN→RINGO</h3>
-            <p class="tag">あなたの話し方の癖・ミス・思考パターンを AI が学習し最適化するマルチリンガル語学AIコーチ。毎日 30 分の会話で、勉強しなくていい語学学習。</p>
-            <div class="meta"><span class="price">15 時間まで無料</span><span>ken-ringo.com ↗</span></div>
-          </div>
+        <a class="card c-biz" href="https://ma-portal.net" target="_blank">
+          <div class="thumb"><img src="https://ma-portal.net/ogp-image.svg" alt="M&A Portal" loading="eager"><span class="fallback">M&A</span></div>
+          <div class="body"><div class="cat">ビジネス</div><h3>M&amp;A Portal</h3><p class="tag">中小企業のM&amp;A案件をAIがマッチング。</p><div class="meta"><span class="price">無料〜</span><span>ma-portal.net ↗</span></div></div>
         </a>
+        <a class="card c-biz" href="https://hojokin-ai.org/" target="_blank">
+          <div class="thumb"><img src="https://hojokin-ai.org/hojokin-AI_TOP.png" alt="補助金AI" loading="eager"><span class="fallback">補</span></div>
+          <div class="body"><div class="cat">ビジネス</div><h3>補助金AI</h3><p class="tag">補助金をAIが自動分析＆専門家マッチング。</p><div class="meta"><span class="price">無料〜</span><span>hojokin-ai.org ↗</span></div></div>
+        </a>
+        <a class="card c-biz" href="https://aiceosimulator.com/" target="_blank">
+          <div class="thumb"><img src="https://aiceosimulator.com/og-image.webp" alt="AI CEO Simulator" loading="eager"><span class="fallback">CEO</span></div>
+          <div class="body"><div class="cat">ビジネス</div><h3>AI CEO Simulator</h3><p class="tag">経営判断をAIがシミュレーション。</p><div class="meta"><span class="price">無料〜</span><span>aiceosimulator.com ↗</span></div></div>
+        </a>
+        <a class="card c-edu" href="https://ken-ringo.com/" target="_blank">
+          <div class="thumb"><img src="https://ken-ringo.com/og-image.webp" alt="KEN→RINGO" loading="eager"><span class="fallback">語</span></div>
+          <div class="body"><div class="cat">教育</div><h3>KEN→RINGO</h3><p class="tag">話し方の癖をAIが学習する語学AIコーチ。</p><div class="meta"><span class="price">15時間無料</span><span>ken-ringo.com ↗</span></div></div>
+        </a>
+        <a class="card c-ent" href="https://alive-casino.games/" target="_blank">
+          <div class="thumb"><img src="https://alive-casino.games/og-image.png" alt="ALIVE Casino" loading="eager"><span class="fallback">🎰</span></div>
+          <div class="body"><div class="cat">エンタメ</div><h3>ALIVE Casino</h3><p class="tag">AIディーラーが進行するオンラインカジノ体験。</p><div class="meta"><span class="price">無料〜</span><span>alive-casino.games ↗</span></div></div>
+        </a>
+      </div>
+
+      <!-- AI SaaS アプリ群 -->
+      <h3 style="font-size:15px;color:var(--sub);margin-bottom:8px;font-weight:600">🤖 AI Micro SaaS アプリ <span style="font-weight:400">— 無料で試せる / 月額980円〜2,980円</span></h3>
+      <p style="font-size:13px;color:var(--sub);margin-bottom:16px">以下のようなアプリを、あなたのアイディアで作れます。まず使ってみてください。</p>
+
+      <!-- Category filter tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="cat-filter">
+        <button class="cat-tab active" onclick="filterApps('all')">すべて</button>
+        <button class="cat-tab" onclick="filterApps('daily')">🏠 日常生活</button>
+        <button class="cat-tab" onclick="filterApps('creator')">🎨 クリエイター</button>
+        <button class="cat-tab" onclick="filterApps('business')">💼 ビジネス</button>
+        <button class="cat-tab" onclick="filterApps('learning')">📖 学習</button>
+        <button class="cat-tab" onclick="filterApps('entertainment')">🎮 エンタメ</button>
+      </div>
+
+      <div class="featured" id="ai-apps-grid" style="grid-template-columns:repeat(4,1fr);gap:16px">
+        <!-- dynamically loaded -->
       </div>
     </div>
   </section>
@@ -207,10 +373,51 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       <p class="section-sub">企画投稿から公開まで、最短72時間</p>
       <div class="process">
         <div class="step"><div class="num">STEP 01</div><h4>企画投稿</h4><p>ダッシュボードで概要・対象ユーザー・欲しい機能を入力。</p></div>
-        <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計</h4><p>Claude が事業計画・BEP・技術スタックを自動ドラフト。</p></div>
-        <div class="step"><div class="num">STEP 03</div><h4>Puente 承認 → 開発</h4><p>承認後、Puente ボリビアチームが Next.js + Supabase で実装。</p></div>
+        <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計</h4><p>AIが事業計画・BEP・技術スタックを自動ドラフト。</p></div>
+        <div class="step"><div class="num">STEP 03</div><h4>Puente 承認 → 開発</h4><p>承認後、Puente +AI実装。</p></div>
         <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認</h4><p>非公開リンクをダッシュボードで通知。あなたが OK で公開。</p></div>
-        <div class="step"><div class="num">STEP 05</div><h4>自動プロモ</h4><p>PR Times / SNS / YouTube Short まで自動配信。</p></div>
+        <div class="step"><div class="num">STEP 05</div><h4>自動プロモ</h4><p>PR Times / SNS / YouTube Short まで自動配信。ご自身のSNSでも是非告知をお願い致します。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2 class="section-title">よくある質問</h2>
+      <p class="section-sub">FAQ</p>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Micro SaaS オーナーになるのに技術知識は必要ですか？</summary>
+          <p>いいえ。企画概要・対象ユーザー・欲しい機能をダッシュボードから投稿するだけです。AIが事業計画やBEPを自動設計し、Puenteが開発・運用・保守をすべて行います。</p>
+        </details>
+        <details class="faq-item">
+          <summary>初期費用以外に費用はかかりますか？</summary>
+          <p>月額プラットフォーム費は0円です。初期費用330,000円（税込）のみで、ホスティング・運用保守・障害対応すべて込みです。現在、先着の創業メンバー価格として80%OFFの66,000円で提供中です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>売上の分配はどうなりますか？</summary>
+          <p>エンドユーザーの月額課金売上は、Stripe Connectにより自動で70（プエンテ）/ 30（オーナー）に分配されます。ロイヤリティ支払いではなく、各自の売上として計上されるため、インボイス対応も安心です。翌月末にオーナー指定口座へ自動振り込みされます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>エンドユーザー向けのサブスクプランは？</summary>
+          <p>全SaaS共通で4プランあります。無料（月3回）/ ベーシック 月額980円（月30回）/ スタンダード 月額1,980円（月100回）/ プレミアム 月額2,980円（無制限）。すべて税込で、いつでもアップグレード・ダウングレード・解約可能です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>サブスクの解約やダウングレードはできますか？</summary>
+          <p>はい。いつでもアプリ内のプラン画面から変更できます。ダウングレード・解約は次の請求期間から適用されます。現在の請求期間が終了するまでは引き続きご利用いただけます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>企画投稿からローンチまでの期間は？</summary>
+          <p>最短3営業日でローンチします。企画投稿後、AIが自動解析し、Puenteが承認・開発。プレビューリンクをダッシュボードでお知らせし、OKなら公開です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>プロモーションはどうなりますか？</summary>
+          <p>PR Times掲載、SNS投稿、YouTube Short動画まで自動配信します。併せてご自身のSNSでも告知いただくとより効果的です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>作ったSaaSのソースコードは貰えますか？</summary>
+          <p>ソースコード・インフラの知的財産権はプエンテに帰属します。ただし、ユーザーのアイデア・コンテンツに関する権利はユーザーに帰属します。</p>
+        </details>
       </div>
     </div>
   </section>
@@ -228,9 +435,8 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
               <p class="desc">企画解析・設計・開発・公開・ホスティング・運用保守すべて込み。</p>
               <ul>
                 <li>AI 企画解析・事業計画・BEP 自動生成</li>
-                <li>Next.js + Cloudflare + Supabase での実装</li>
                 <li>apps.puente-saas.com 配下で公開・SSL 自動</li>
-                <li>運用保守・障害対応（Puente ボリビアチーム）</li>
+                <li>運用保守・障害対応（Puente ）</li>
               </ul>
             </div>
             <div class="plan pop">
@@ -241,12 +447,39 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
               <ul>
                 <li>同上のフルパッケージ</li>
                 <li>事例として PR Times 掲載</li>
-                <li>Puente スーパー管理者による直接サポート</li>
                 <li>1社1回まで</li>
               </ul>
             </div>
           </div>
         </div>
+      </div>
+
+      <div style="margin-top:48px">
+        <h3 style="color:#fff;text-align:center;font-size:20px;margin-bottom:8px">エンドユーザー向けサブスク料金（全SaaS共通）</h3>
+        <p style="color:#888;text-align:center;font-size:14px;margin-bottom:24px">すべてのプランで同じ機能。違いは月間利用回数だけ。</p>
+        <div class="enduser-plans" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:20px;text-align:center">
+            <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">無料</div>
+            <div style="font-family:Inter;font-weight:700;font-size:28px;color:#fff">¥0<span style="font-size:12px;color:#888;font-weight:400">/月</span></div>
+            <div style="color:var(--accent);font-size:13px;margin-top:8px">月3回まで</div>
+          </div>
+          <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:20px;text-align:center">
+            <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">ベーシック</div>
+            <div style="font-family:Inter;font-weight:700;font-size:28px;color:#fff">¥980<span style="font-size:12px;color:#888;font-weight:400">/月</span></div>
+            <div style="color:var(--accent);font-size:13px;margin-top:8px">月30回まで</div>
+          </div>
+          <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:20px;text-align:center">
+            <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">スタンダード</div>
+            <div style="font-family:Inter;font-weight:700;font-size:28px;color:#fff">¥1,980<span style="font-size:12px;color:#888;font-weight:400">/月</span></div>
+            <div style="color:var(--accent);font-size:13px;margin-top:8px">月100回まで</div>
+          </div>
+          <div style="background:#1a1a1a;border:1px solid var(--accent);border-radius:12px;padding:20px;text-align:center">
+            <div style="font-weight:700;font-size:14px;color:var(--accent);margin-bottom:8px">プレミアム</div>
+            <div style="font-family:Inter;font-weight:700;font-size:28px;color:#fff">¥2,980<span style="font-size:12px;color:#888;font-weight:400">/月</span></div>
+            <div style="color:var(--accent);font-size:13px;margin-top:8px">無制限</div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:12px;color:#666;margin-top:12px">※ 全て税込。いつでもアップグレード・ダウングレード可能。</p>
       </div>
 
       <div class="split">
@@ -272,30 +505,112 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 <!-- Dashboard (shown after login) -->
 <section id="dashboard-section">
   <div class="wrap">
+    <div class="breadcrumb">
+      <a href="/">Puente Micro SaaS</a>
+      <span class="sep">›</span>
+      <span>マイページ</span>
+    </div>
     <div class="dash-header">
       <div>
-        <h2 class="section-title">ダッシュボード</h2>
+        <h2 class="section-title">マイページ</h2>
         <p class="section-sub" id="dash-welcome">ようこそ</p>
       </div>
-      <div style="display:flex;gap:12px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="showAuth('idea')">新しい企画を投稿</button>
+        <button class="btn btn-ghost" id="btn-admin" style="display:none" onclick="showAdminPanel()">管理パネル</button>
         <button class="btn btn-ghost" onclick="doLogout()">ログアウト</button>
       </div>
     </div>
     <div class="dash-cards">
       <div class="dash-card"><div class="dc-num" id="dc-ideas">0</div><div class="dc-label">投稿した企画</div></div>
-      <div class="dash-card"><div class="dc-num" id="dc-apps">0</div><div class="dc-label">稼働中 SaaS</div></div>
+      <div class="dash-card"><div class="dc-num" id="dc-apps">0</div><div class="dc-label">承認済み / 稼働中</div></div>
+      <div class="dash-card"><div class="dc-num" id="dc-myapps">0</div><div class="dc-label">利用中のSaaS</div></div>
       <div class="dash-card"><div class="dc-num" id="dc-revenue">¥0</div><div class="dc-label">今月の売上</div></div>
     </div>
-    <h3 style="font-size:20px;font-weight:700;margin-bottom:16px">マイ企画</h3>
-    <div id="ideas-list">
-      <p style="color:var(--sub)">まだ企画がありません。「新しい企画を投稿」から始めましょう。</p>
+
+    <!-- タブ切り替え -->
+    <div class="dash-tab-bar">
+      <div class="dash-tab active" onclick="switchDashTab('apps')" id="tab-apps">🚀 利用中のSaaS</div>
+      <div class="dash-tab" onclick="switchDashTab('ideas')" id="tab-ideas">📋 投稿した企画</div>
+    </div>
+
+    <!-- 利用中の Micro SaaS -->
+    <div id="dash-panel-apps">
+      <div id="my-apps-list" class="my-apps-grid">
+        <p style="color:var(--sub)">読み込み中...</p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <a href="https://apps.puente-saas.com" class="btn btn-ghost" style="font-size:13px;padding:10px 24px">🔍 すべてのSaaSアプリを見る</a>
+      </div>
+    </div>
+
+    <!-- 投稿した企画 -->
+    <div id="dash-panel-ideas" style="display:none">
+      <div id="ideas-list">
+        <p style="color:var(--sub)">まだ企画がありません。「新しい企画を投稿」から始めましょう。</p>
+      </div>
+      <!-- AI分析結果の詳細表示パネル -->
+      <div id="ai-plan-detail" style="display:none;margin-top:32px">
+        <h3 style="font-size:20px;font-weight:700;margin-bottom:16px">AI 分析結果</h3>
+        <div id="ai-plan-content"></div>
+      </div>
     </div>
   </div>
 </section>
 
+<!-- Super Admin Panel -->
+<section id="admin-section" style="display:none;padding:80px 0;background:#f5f5f0">
+  <div class="wrap">
+    <div class="dash-header">
+      <div>
+        <h2 class="section-title">スーパーアドミン</h2>
+        <p class="section-sub">全プロジェクト・ユーザー・KPIを一元管理</p>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-ghost" onclick="hideAdminPanel()">← ダッシュボードに戻る</button>
+      </div>
+    </div>
+    <!-- KPI Cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px" id="admin-kpi">
+      <div class="dash-card"><div class="dc-num" id="ak-companies">-</div><div class="dc-label">登録企業数</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-projects">-</div><div class="dc-label">総プロジェクト数</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-published">-</div><div class="dc-label">公開SaaS数</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-subs">-</div><div class="dc-label">アクティブ課金数</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px">
+      <div class="dash-card"><div class="dc-num" id="ak-mrr">¥0</div><div class="dc-label">MRR</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-arr">¥0</div><div class="dc-label">ARR</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-churn">0%</div><div class="dc-label">退会率</div></div>
+      <div class="dash-card"><div class="dc-num" id="ak-conv">0%</div><div class="dc-label">課金転換率</div></div>
+    </div>
+    <!-- Status Breakdown -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:12px">ステータス別プロジェクト数</h3>
+    <div id="admin-status-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px"></div>
+    <!-- Filters -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="admin-filter-status" onchange="loadAdminProjects()" style="padding:8px 14px;border:1.5px solid var(--line);border-radius:8px;font-size:14px">
+        <option value="">全ステータス</option>
+        <option value="draft">下書き</option>
+        <option value="needs_improvement">改善提案あり</option>
+        <option value="auto_dev">自動開発中</option>
+        <option value="ai_analyzing">AI分析中</option>
+        <option value="approved">承認済み</option>
+        <option value="in_development">開発中</option>
+        <option value="published">公開中</option>
+        <option value="rejected">却下</option>
+      </select>
+    </div>
+    <!-- Projects Table -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:12px">全プロジェクト一覧</h3>
+    <div id="admin-projects-list" style="overflow-x:auto"></div>
+    <!-- Users -->
+    <h3 style="font-size:18px;font-weight:700;margin:32px 0 12px">登録ユーザー一覧</h3>
+    <div id="admin-users-list" style="overflow-x:auto"></div>
+  </div>
+</section>
+
 <!-- Auth Modal -->
-<div class="modal-overlay" id="auth-modal">
+<div class="modal-overlay" id="auth-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">&times;</button>
 
@@ -349,6 +664,8 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       <div class="field">
         <label>カテゴリ</label>
         <select id="idea-category">
+          <option value="daily">日常生活</option>
+          <option value="creator">クリエイター</option>
           <option value="business">ビジネス</option>
           <option value="learning">学習・教育</option>
           <option value="entertainment">エンタメ</option>
@@ -381,11 +698,11 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       </div>
       <div>
         <h5>サービス</h5>
-        <ul><li><a href="#apps">アプリ一覧</a></li><li><a href="#" onclick="handleCTA()">企画を投稿</a></li><li><a href="#pricing">料金</a></li></ul>
+        <ul><li><a href="#apps">アプリ一覧</a></li><li><a href="#" onclick="handleCTA()">企画を投稿</a></li><li><a href="#faq">FAQ</a></li><li><a href="#pricing">料金</a></li></ul>
       </div>
       <div>
         <h5>会社</h5>
-        <ul><li><a href="https://www.puentework.com" target="_blank">プエンテについて</a></li><li><a href="mailto:info@puentework.com">お問合せ</a></li></ul>
+        <ul><li><a href="https://www.puentework.com" target="_blank">プエンテについて</a></li><li><a href="https://www.puentework.com/" target="_blank">お問合せ</a></li></ul>
       </div>
       <div>
         <h5>リーガル</h5>
@@ -487,6 +804,17 @@ function showDashboard() {
   return false;
 }
 
+function showLPSection(sectionId) {
+  // If dashboard is active, switch back to LP view
+  document.getElementById('main-content').style.display = '';
+  document.getElementById('dashboard-section').classList.remove('active');
+  document.querySelectorAll('.hero, #apps, #process, #faq, #pricing').forEach(el => el.style.display = '');
+  setTimeout(() => {
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, 50);
+}
+
 // ---- Login ----
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
@@ -535,43 +863,259 @@ async function doLogout() {
   return false;
 }
 
+// ---- API Helper ----
+async function apiCall(path, method = 'GET', body = null) {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (!session) return null;
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + session.access_token,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  return res.json();
+}
+
+let _userProjects = [];
+let _isSuperAdmin = false;
+
 // ---- Dashboard ----
 async function loadDashboard() {
   if (!currentUser) return;
 
-  // Load ideas
-  const { data: ideas } = await _sb
-    .from('saas_ideas')
-    .select('*')
-    .eq('owner_id', currentUser.id)
-    .order('created_at', { ascending: false });
+  // Check admin status via API
+  try {
+    const me = await apiCall('/api/me');
+    _isSuperAdmin = me?.role === 'super_admin';
+  } catch(e) { _isSuperAdmin = false; }
+  if (_isSuperAdmin) {
+    document.getElementById('btn-admin').style.display = '';
+  }
+
+  // Load projects via Workers API
+  const result = await apiCall('/api/saas');
+  const projects = result?.projects || [];
+  _userProjects = projects;
 
   const list = document.getElementById('ideas-list');
   const countEl = document.getElementById('dc-ideas');
+  const appsEl = document.getElementById('dc-apps');
 
-  if (ideas && ideas.length > 0) {
-    countEl.textContent = ideas.length;
-    list.innerHTML = ideas.map(i => `
-      <div class="idea-item">
+  countEl.textContent = projects.length;
+  const activeCount = projects.filter(p => ['approved','auto_dev','in_development','published','preview'].includes(p.status)).length;
+  appsEl.textContent = activeCount;
+
+  if (projects.length > 0) {
+    list.innerHTML = projects.map((p, idx) => `
+      <div class="idea-item" onclick="toggleProjectDetail(${idx})" id="project-item-${idx}">
         <div>
-          <div class="idea-name">${escHtml(i.name)}</div>
-          <div style="font-size:13px;color:var(--sub);margin-top:4px">${escHtml(i.category)} · ${new Date(i.created_at).toLocaleDateString('ja-JP')}</div>
+          <div class="idea-name">${escHtml(p.name)}</div>
+          <div style="font-size:13px;color:var(--sub);margin-top:4px">${escHtml(p.category)} · ${new Date(p.created_at).toLocaleDateString('ja-JP')}</div>
         </div>
-        <span class="idea-status ${i.status}">${statusLabel(i.status)}</span>
+        <span class="idea-status ${p.status}">${statusLabel(p.status)}</span>
       </div>
+      <div id="project-detail-${idx}" style="display:none;margin-bottom:16px"></div>
     `).join('');
   } else {
-    countEl.textContent = '0';
     list.innerHTML = '<p style="color:var(--sub)">まだ企画がありません。「新しい企画を投稿」から始めましょう。</p>';
   }
 
-  // Load apps
-  const { data: apps } = await _sb
-    .from('saas_apps')
-    .select('id')
-    .eq('owner_id', currentUser.id)
-    .eq('is_published', true);
-  document.getElementById('dc-apps').textContent = apps?.length || 0;
+  // Revenue via API (no direct Supabase query)
+  try {
+    const rev = await apiCall('/api/my/revenue');
+    if (rev?.monthly?.[0]) {
+      document.getElementById('dc-revenue').textContent = '¥' + (rev.monthly[0].user_revenue || 0).toLocaleString();
+    }
+  } catch(e) {}
+
+  // 利用中の Micro SaaS を読み込み
+  try {
+    const myApps = await apiCall('/api/my/apps');
+    const appsList = myApps?.apps || [];
+    document.getElementById('dc-myapps').textContent = appsList.length;
+    const container = document.getElementById('my-apps-list');
+    if (appsList.length > 0) {
+      container.innerHTML = appsList.map(s => {
+        const a = s.app || {};
+        const url = a.subdomain ? `https://${a.subdomain}.puente-saas.com` : '#';
+        const planLabel = { basic: 'Basic', standard: 'Standard', premium: 'Premium', free: 'Free' }[s.plan] || s.plan;
+        return `<a class="my-app-card" href="${escHtml(url)}" target="_blank" rel="noopener">
+          <div class="my-app-emoji">${a.emoji || '🚀'}</div>
+          <div class="my-app-info">
+            <div class="my-app-name">${escHtml(a.name || 'SaaS App')}</div>
+            <div class="my-app-tagline">${escHtml(a.tagline || '')}</div>
+            <span class="my-app-plan">${planLabel}</span>
+          </div>
+          <div class="my-app-open">→</div>
+        </a>`;
+      }).join('');
+    } else {
+      container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px 0">
+        <p style="font-size:42px;margin-bottom:12px">🚀</p>
+        <p style="color:var(--sub);font-size:14px">まだ利用中のSaaSはありません</p>
+        <a href="https://apps.puente-saas.com" class="btn btn-primary" style="margin-top:16px;font-size:13px;padding:10px 24px">SaaSアプリを探す</a>
+      </div>`;
+    }
+  } catch(e) {
+    document.getElementById('my-apps-list').innerHTML = '<p style="color:var(--sub)">読み込みに失敗しました</p>';
+  }
+}
+
+// ---- Tab Switching ----
+function switchDashTab(tab) {
+  document.getElementById('dash-panel-apps').style.display = tab === 'apps' ? '' : 'none';
+  document.getElementById('dash-panel-ideas').style.display = tab === 'ideas' ? '' : 'none';
+  document.getElementById('tab-apps').classList.toggle('active', tab === 'apps');
+  document.getElementById('tab-ideas').classList.toggle('active', tab === 'ideas');
+}
+
+// ---- Project Detail (AI Plan) ----
+function toggleProjectDetail(idx) {
+  const detailEl = document.getElementById('project-detail-' + idx);
+  const itemEl = document.getElementById('project-item-' + idx);
+  if (detailEl.style.display === 'none') {
+    detailEl.style.display = '';
+    itemEl.classList.add('expanded');
+    renderProjectDetail(idx);
+  } else {
+    detailEl.style.display = 'none';
+    itemEl.classList.remove('expanded');
+  }
+}
+
+function renderProjectDetail(idx) {
+  const p = _userProjects[idx];
+  const el = document.getElementById('project-detail-' + idx);
+  if (!p) return;
+
+  const plan = p.ai_plan;
+  if (!plan) {
+    if (p.status === 'ai_analyzing') {
+      el.innerHTML = '<div class="ai-card"><p style="text-align:center;font-size:16px">⏳ AI が企画を分析中です…（通常1〜2分）</p><p style="text-align:center;margin-top:8px"><button class="btn btn-ghost" onclick="loadDashboard()" style="padding:8px 16px;font-size:13px">更新</button></p></div>';
+    } else if (p.status === 'draft') {
+      el.innerHTML = '<div class="ai-card"><p>まだAI分析が開始されていません。</p></div>';
+    } else {
+      el.innerHTML = '<div class="ai-card"><p>AI分析データがありません。</p></div>';
+    }
+    return;
+  }
+
+  const scoring = plan.scoring || {};
+  const scoreClass = (s) => s >= 70 ? 'high' : s >= 40 ? 'mid' : 'low';
+
+  el.innerHTML = `
+    <!-- スコアリング -->
+    <div class="ai-card">
+      <h4>AI スコアリング</h4>
+      <div class="score-bar">
+        <div class="score-item">
+          <div class="score-num ${scoreClass(scoring.feasibility?.score || 0)}">${scoring.feasibility?.score || '-'}</div>
+          <div class="score-label">実現可能性</div>
+        </div>
+        <div class="score-item">
+          <div class="score-num ${scoreClass(scoring.profitability?.score || 0)}">${scoring.profitability?.score || '-'}</div>
+          <div class="score-label">収益性</div>
+        </div>
+        <div class="score-item">
+          <div class="score-num ${scoreClass(scoring.technical_difficulty?.score || 0)}">${scoring.technical_difficulty?.score || '-'}</div>
+          <div class="score-label">技術容易度</div>
+        </div>
+        <div class="score-item">
+          <div class="score-num" style="color:var(--accent)">${scoring.total_score || '-'}</div>
+          <div class="score-label">総合スコア</div>
+        </div>
+      </div>
+      ${scoring.feasibility?.reason ? '<p style="margin-top:8px"><strong>実現可能性:</strong> ' + escHtml(scoring.feasibility.reason) + '</p>' : ''}
+      ${scoring.profitability?.reason ? '<p><strong>収益性:</strong> ' + escHtml(scoring.profitability.reason) + '</p>' : ''}
+      ${plan.decision === 'rejected' && plan.rejection_reason ? '<div style="background:#FFEBEE;padding:14px;border-radius:8px;margin-top:12px"><strong style="color:#C62828">却下理由:</strong> ' + escHtml(plan.rejection_reason) + '</div>' : ''}
+      ${plan.decision === 'auto_dev' ? '<div style="background:#E8F5E9;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #1B5E20"><strong style="color:#1B5E20">🚀 自動開発トリガー発動</strong><p style="margin-top:4px">スコア85点以上＆技術スコープOK — 自動開発キューに追加されました。</p></div>' : ''}
+      ${plan.decision === 'needs_improvement' && plan.improvement_suggestions ? '<div style="background:#FFF8E1;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #F57F17"><strong style="color:#F57F17">💡 改善提案（85点以上で自動開発）</strong><ul style="margin-top:8px">' + plan.improvement_suggestions.map(s => '<li>' + escHtml(s) + '</li>').join('') + '</ul><p style="margin-top:8px;font-size:13px">改善して再投稿すると、スコアが向上し自動開発の対象になります。</p></div>' : ''}
+      ${plan.scope_check && !plan.scope_check.scope_ok ? '<div style="background:#FFF3E0;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #E65100"><strong style="color:#E65100">⚠️ 技術スコープ外の機能あり</strong><ul style="margin-top:8px">' + (plan.scope_check.out_of_scope_features||[]).map(f => '<li style="color:#BF360C">' + escHtml(f) + '</li>').join('') + '</ul>' + ((plan.scope_check.alternatives||[]).length ? '<p style="margin-top:8px"><strong>代替案:</strong></p><ul>' + plan.scope_check.alternatives.map(a => '<li style="color:#00695C">' + escHtml(a) + '</li>').join('') + '</ul>' : '') + '</div>' : ''}
+    </div>
+    <!-- エグゼクティブサマリー -->
+    <div class="ai-card">
+      <h4>エグゼクティブサマリー</h4>
+      <p>${escHtml(plan.executive_summary || '')}</p>
+    </div>
+    <!-- 収益シミュレーション (BEP) -->
+    <div class="ai-card">
+      <h4>収益シミュレーション（BEP分析）</h4>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+        <div><div style="font-size:12px;color:var(--sub)">月次固定コスト</div><div style="font-family:Inter;font-weight:700;font-size:24px">¥${(plan.bep?.monthly_fixed_cost_jpy || 0).toLocaleString()}</div></div>
+        <div><div style="font-size:12px;color:var(--sub)">平均 ARPU</div><div style="font-family:Inter;font-weight:700;font-size:24px">¥${(plan.bep?.avg_arpu_jpy || 0).toLocaleString()}</div></div>
+        <div><div style="font-size:12px;color:var(--sub)">損益分岐 MRR</div><div style="font-family:Inter;font-weight:700;font-size:24px;color:var(--accent)">¥${(plan.bep?.break_even_mrr_jpy || 0).toLocaleString()}</div></div>
+        <div><div style="font-size:12px;color:var(--sub)">損益分岐ユーザー数</div><div style="font-family:Inter;font-weight:700;font-size:24px;color:var(--accent)">${plan.bep?.break_even_users || '-'}人</div></div>
+      </div>
+      <p style="margin-top:16px;font-size:13px;color:var(--sub)">※ あなたの取り分は売上の30%です。損益分岐後の利益もこの比率で分配されます。</p>
+    </div>
+    <!-- ターゲット市場 -->
+    <div class="ai-card">
+      <h4>ターゲット市場</h4>
+      <p><strong>ペルソナ:</strong> ${escHtml(plan.target_market?.persona || '')}</p>
+      <p><strong>課題:</strong> ${escHtml(plan.target_market?.pain || '')}</p>
+      <p><strong>TAM:</strong> ¥${(plan.target_market?.tam_jpy || 0).toLocaleString()}</p>
+    </div>
+    <!-- コア機能 -->
+    <div class="ai-card">
+      <h4>コア機能</h4>
+      <ul>${(plan.core_features || []).map(f => '<li><strong>' + escHtml(f.name) + '</strong> (' + f.priority + ') — ' + escHtml(f.description) + '</li>').join('')}</ul>
+    </div>
+    <!-- 3日ロードマップ -->
+    <div class="ai-card">
+      <h4>3日開発ロードマップ</h4>
+      ${(plan.roadmap_3day || []).map(d => '<div style="margin-bottom:12px"><strong style="color:var(--accent)">Day ' + d.day + '</strong><ul>' + d.tasks.map(t => '<li>' + escHtml(t) + '</li>').join('') + '</ul></div>').join('')}
+    </div>
+    <!-- リスク / KPI -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="ai-card">
+        <h4>リスク</h4>
+        <ul>${(plan.risks || []).map(r => '<li>' + escHtml(r) + '</li>').join('')}</ul>
+      </div>
+      <div class="ai-card">
+        <h4>KPI</h4>
+        <ul>${(plan.kpis || []).map(k => '<li>' + escHtml(k) + '</li>').join('')}</ul>
+      </div>
+    </div>
+    <!-- プロモーション状態 -->
+    ${p.status === 'auto_dev' || p.status === 'approved' || p.status === 'published' ? '<div class="ai-card"><h4>SNS プロモーション</h4><p>✅ 承認済み — PR Times / Wix Blog / X / Instagram / YouTube Short のプロモーションキューに自動登録されました。</p></div>' : ''}
+    ${p.status === 'needs_improvement' || p.status === 'rejected' ? `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
+      <h4>📝 修正して再投稿</h4>
+      <p style="margin-bottom:12px">改善提案を参考に企画を修正してください。総合スコア85点以上で自動開発が開始されます。</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label style="font-size:12px;color:var(--sub)">サービス名</label>
+          <input type="text" id="resubmit-name-${idx}" value="${escHtml(p.brief?.name || p.name || '')}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--sub)">カテゴリ</label>
+          <select id="resubmit-category-${idx}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px">
+            <option value="business" ${(p.brief?.category||'') === 'business' ? 'selected' : ''}>ビジネス</option>
+            <option value="learning" ${(p.brief?.category||'') === 'learning' ? 'selected' : ''}>学習</option>
+            <option value="entertainment" ${(p.brief?.category||'') === 'entertainment' ? 'selected' : ''}>エンタメ</option>
+            <option value="daily" ${(p.brief?.category||'') === 'daily' ? 'selected' : ''}>日常</option>
+            <option value="infra" ${(p.brief?.category||'') === 'infra' ? 'selected' : ''}>インフラ</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--sub)">概要（課題と解決策）</label>
+          <textarea id="resubmit-overview-${idx}" rows="4" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;resize:vertical">${escHtml(p.brief?.overview || '')}</textarea>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--sub)">ターゲットユーザー</label>
+          <input type="text" id="resubmit-target-${idx}" value="${escHtml(p.brief?.target_users || '')}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--sub)">機能（1行1機能、最大5個推奨）</label>
+          <textarea id="resubmit-features-${idx}" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;resize:vertical">${escHtml((p.brief?.features || []).join('\\n'))}</textarea>
+        </div>
+        <div id="resubmit-msg-${idx}"></div>
+        <button class="btn" onclick="resubmitProject('${p.id}', ${idx})" style="padding:12px 24px;font-size:15px;font-weight:700;background:#F57F17;color:#fff;border:none;border-radius:8px;cursor:pointer">🔄 修正して再分析</button>
+      </div>
+    </div>` : ''}
+  `;
 }
 
 function statusLabel(s) {
@@ -579,7 +1123,9 @@ function statusLabel(s) {
     draft: '下書き',
     ai_analyzing: 'AI 解析中',
     pending_approval: '承認待ち',
+    needs_improvement: '改善提案あり',
     approved: '承認済み',
+    auto_dev: '自動開発中 🚀',
     in_development: '開発中',
     ready_for_review: 'レビュー待ち',
     preview: 'プレビュー',
@@ -591,7 +1137,7 @@ function statusLabel(s) {
   return map[s] || s;
 }
 
-// ---- Submit Idea ----
+// ---- Submit Idea (Workers API) ----
 async function submitIdea() {
   if (!currentUser) { showAuth('login'); return; }
 
@@ -604,25 +1150,19 @@ async function submitIdea() {
 
   if (!name || !overview) { showMsg(msg, 'error', 'サービス名と概要は必須です'); return; }
 
-  const features = featuresRaw.split('\n').map(s => s.trim()).filter(Boolean);
+  showMsg(msg, 'success', '投稿中…AI分析を開始します…');
 
-  const { data, error } = await _sb
-    .from('saas_ideas')
-    .insert({
-      owner_id: currentUser.id,
-      name,
-      category,
-      overview,
-      target_users: target,
-      features,
-      status: 'draft',
-    })
-    .select()
-    .single();
+  const result = await apiCall('/api/saas', 'POST', {
+    name,
+    category,
+    overview,
+    target_users: target,
+    features: featuresRaw.split('\n').map(s => s.trim()).filter(Boolean),
+  });
 
-  if (error) { showMsg(msg, 'error', error.message); return; }
+  if (result?.error) { showMsg(msg, 'error', result.error); return; }
 
-  showMsg(msg, 'success', '企画を投稿しました！AI が解析を開始します。');
+  showMsg(msg, 'success', '✅ 企画を投稿しました！AIが自動解析・スコアリング中です。ダッシュボードで進捗を確認できます。');
 
   // Clear form
   document.getElementById('idea-name').value = '';
@@ -634,7 +1174,145 @@ async function submitIdea() {
   setTimeout(() => {
     closeModal();
     showDashboard();
-  }, 1500);
+  }, 2000);
+}
+
+// ---- Resubmit (修正再投稿) ----
+async function resubmitProject(projectId, idx) {
+  if (!currentUser) { showAuth('login'); return; }
+
+  const name = document.getElementById('resubmit-name-' + idx).value.trim();
+  const category = document.getElementById('resubmit-category-' + idx).value;
+  const overview = document.getElementById('resubmit-overview-' + idx).value.trim();
+  const target = document.getElementById('resubmit-target-' + idx).value.trim();
+  const featuresRaw = document.getElementById('resubmit-features-' + idx).value.trim();
+  const msg = document.getElementById('resubmit-msg-' + idx);
+
+  if (!name || !overview) { showMsg(msg, 'error', 'サービス名と概要は必須です'); return; }
+
+  showMsg(msg, 'success', '修正を保存中…AI再分析を開始します…');
+
+  const result = await apiCall('/api/saas/' + projectId + '/resubmit', 'PUT', {
+    name,
+    category,
+    overview,
+    target_users: target,
+    features: featuresRaw.split('\n').map(s => s.trim()).filter(Boolean),
+  });
+
+  if (result?.error) { showMsg(msg, 'error', result.error); return; }
+
+  showMsg(msg, 'success', '✅ 修正を保存しました！AI が再分析中です…ダッシュボードを更新してください。');
+
+  // Refresh dashboard after 2s
+  setTimeout(() => loadDashboard(), 2000);
+}
+
+// ========== Super Admin Panel ==========
+function showAdminPanel() {
+  document.getElementById('dashboard-section').style.display = 'none';
+  document.getElementById('admin-section').style.display = '';
+  loadAdminOverview();
+  loadAdminProjects();
+  loadAdminUsers();
+}
+
+function hideAdminPanel() {
+  document.getElementById('admin-section').style.display = 'none';
+  document.getElementById('dashboard-section').style.display = '';
+  document.getElementById('dashboard-section').classList.add('active');
+}
+
+async function loadAdminOverview() {
+  const data = await apiCall('/api/admin/overview');
+  if (!data || data.error) return;
+  document.getElementById('ak-companies').textContent = data.companies || 0;
+  document.getElementById('ak-projects').textContent = data.total_projects || 0;
+  document.getElementById('ak-published').textContent = data.saas_published || 0;
+  document.getElementById('ak-subs').textContent = data.active_subs || 0;
+  document.getElementById('ak-mrr').textContent = '¥' + (data.mrr || 0).toLocaleString();
+  document.getElementById('ak-arr').textContent = '¥' + (data.arr || 0).toLocaleString();
+  document.getElementById('ak-churn').textContent = (data.churn_rate || 0) + '%';
+  document.getElementById('ak-conv').textContent = (data.conversion_rate || 0) + '%';
+
+  // Status breakdown bar
+  const sc = data.status_counts || {};
+  const bar = document.getElementById('admin-status-bar');
+  const colors = {
+    draft:'#FFF3E0', ai_analyzing:'#E3F2FD', pending_approval:'#FFF9C4',
+    needs_improvement:'#FFF8E1', approved:'#E0F2F1', auto_dev:'#C8E6C9',
+    in_development:'#E8EAF6', published:'#E8F5E9',
+    rejected:'#FFEBEE', preview:'#F3E5F5', paused:'#ECEFF1'
+  };
+  bar.innerHTML = Object.entries(sc).map(([s, c]) =>
+    '<div style="background:' + (colors[s]||'#eee') + ';padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600">' + statusLabel(s) + ': ' + c + '</div>'
+  ).join('');
+}
+
+async function loadAdminProjects() {
+  const status = document.getElementById('admin-filter-status').value;
+  const url = '/api/admin/projects' + (status ? '?status=' + status : '');
+  const data = await apiCall(url);
+  if (!data || data.error) return;
+
+  const projects = data.projects || [];
+  const el = document.getElementById('admin-projects-list');
+
+  if (projects.length === 0) {
+    el.innerHTML = '<p style="color:var(--sub)">該当するプロジェクトはありません。</p>';
+    return;
+  }
+
+  el.innerHTML = '<table class="admin-table"><thead><tr><th>名前</th><th>カテゴリ</th><th>ステータス</th><th>AIスコア</th><th>投稿日</th><th>操作</th></tr></thead><tbody>' +
+    projects.map(p => {
+      const score = p.ai_plan?.scoring?.total_score;
+      const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
+      const statusColors = {
+        draft:'#E65100', ai_analyzing:'#1565C0', needs_improvement:'#F57F17',
+        approved:'#00695C', auto_dev:'#1B5E20',
+        in_development:'#283593', published:'#2E7D32', rejected:'#C62828',
+        pending_approval:'#F57F17', preview:'#6A1B9A'
+      };
+      return '<tr>' +
+        '<td><strong>' + escHtml(p.name) + '</strong></td>' +
+        '<td>' + escHtml(p.category) + '</td>' +
+        '<td><span class="status-chip" style="background:' + (statusColors[p.status]||'#666') + '22;color:' + (statusColors[p.status]||'#666') + '">' + statusLabel(p.status) + '</span></td>' +
+        '<td><span class="admin-score score-num ' + scoreClass + '" style="font-size:16px">' + (score ?? '-') + '</span></td>' +
+        '<td>' + new Date(p.created_at).toLocaleDateString('ja-JP') + '</td>' +
+        '<td><select onchange="adminChangeStatus(\'' + p.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">' +
+          '<option value="">操作...</option>' +
+          '<option value="auto_dev">自動開発</option>' +
+          '<option value="approved">承認</option>' +
+          '<option value="needs_improvement">改善提案</option>' +
+          '<option value="in_development">開発開始</option>' +
+          '<option value="published">公開</option>' +
+          '<option value="rejected">却下</option>' +
+          '<option value="paused">一時停止</option>' +
+        '</select></td>' +
+      '</tr>';
+    }).join('') +
+  '</tbody></table>';
+}
+
+async function adminChangeStatus(projectId, newStatus) {
+  if (!newStatus) return;
+  if (!confirm(statusLabel(newStatus) + ' に変更しますか？')) return;
+  await apiCall('/api/saas/' + projectId + '/status', 'PATCH', { status: newStatus });
+  loadAdminProjects();
+  loadAdminOverview();
+}
+
+async function loadAdminUsers() {
+  const data = await apiCall('/api/admin/users');
+  if (!data || data.error) return;
+  const users = data.users || [];
+  const el = document.getElementById('admin-users-list');
+
+  el.innerHTML = '<table class="admin-table"><thead><tr><th>メール</th><th>表示名</th><th>ロール</th><th>登録日</th></tr></thead><tbody>' +
+    users.map(u =>
+      '<tr><td>' + escHtml(u.email) + '</td><td>' + escHtml(u.display_name || '-') + '</td><td><span class="status-chip" style="background:' + (u.role === 'super_admin' ? '#FF5A1F22;color:#FF5A1F' : '#E0E0E0;color:#666') + '">' + u.role + '</span></td><td>' + new Date(u.created_at).toLocaleDateString('ja-JP') + '</td></tr>'
+    ).join('') +
+  '</tbody></table>';
 }
 
 // ---- Utils ----
@@ -649,6 +1327,55 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
+function toggleMobileMenu() {
+  const menu = document.getElementById('nav-menu');
+  const btn = document.getElementById('mobile-menu-btn');
+  menu.classList.toggle('mobile-open');
+  btn.textContent = menu.classList.contains('mobile-open') ? '✕' : '☰';
+}
+// Close mobile menu on link click
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#nav-menu a')) {
+    const menu = document.getElementById('nav-menu');
+    const btn = document.getElementById('mobile-menu-btn');
+    menu.classList.remove('mobile-open');
+    btn.textContent = '☰';
+  }
+});
+
+// ---- AI Apps Catalog ----
+let _aiApps = [];
+const CAT_LABELS = {daily:'日常生活',creator:'クリエイター',business:'ビジネス',learning:'学習',entertainment:'エンタメ'};
+async function loadAiApps() {
+  try {
+    const res = await fetch('https://api.puente-saas.com/api/apps');
+    const data = await res.json();
+    _aiApps = data.apps || [];
+    renderAiApps('all');
+  } catch(e) { console.error('Failed to load AI apps', e); }
+}
+function renderAiApps(cat) {
+  const grid = document.getElementById('ai-apps-grid');
+  if (!grid) return;
+  const apps = cat === 'all' ? _aiApps : _aiApps.filter(a => a.category === cat);
+  grid.innerHTML = apps.map(a => {
+    const url = 'https://' + (a.subdomain || a.slug) + '.puente-saas.com';
+    return `<a class="ai-app-card" href="${url}" target="_blank">
+      <span class="app-cat-badge cat-${a.category}">${CAT_LABELS[a.category]||a.category}</span>
+      <span class="app-emoji">${a.emoji||'🚀'}</span>
+      <div class="app-name">${escHtml(a.name)}</div>
+      <div class="app-tagline">${escHtml(a.tagline)}</div>
+      <span class="app-price">無料〜¥1,980/月</span>
+    </a>`;
+  }).join('');
+}
+function filterApps(cat) {
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderAiApps(cat);
+}
+loadAiApps();
+
 // ---- Legal pages ----
 const LEGAL = {
   terms: `<h2 style="margin-bottom:16px;font-size:24px;font-weight:700">利用規約</h2>
@@ -658,7 +1385,9 @@ const LEGAL = {
 <h3 style="margin:20px 0 8px;font-weight:600">第2条（定義）</h3>
 <p>「ユーザー」とは本サービスに登録し利用する個人または法人を指します。「Micro SaaS」とはユーザーのアイデアに基づき当社が開発・運営するSaaSサービスを指します。</p>
 <h3 style="margin:20px 0 8px;font-weight:600">第3条（サービス内容）</h3>
-<p>当社はユーザーから提出された企画概要に基づき、Micro SaaSの開発・運営・保守を行います。初期費用は330,000円（税込）、月額費用は無料です。売上はプエンテ70%、ユーザー30%の比率で分配されます。</p>
+<p>本サービスには以下の2種類の利用形態があります。</p>
+<p style="margin-top:8px"><strong>A. Micro SaaS オーナー（企画投稿者）:</strong> 当社はユーザーから提出された企画概要に基づき、Micro SaaSの開発・運営・保守を行います。初期費用は330,000円（税込）、月額プラットフォーム費は無料です。エンドユーザー課金の売上は、プエンテ70%・オーナー30%の比率で自動分配されます（各自の売上として計上）。</p>
+<p style="margin-top:8px"><strong>B. エンドユーザー（SaaSアプリ利用者）:</strong> 各Micro SaaSアプリの利用にあたり、以下のサブスクリプションプランがあります。無料プラン（月3回）/ ベーシック 月額980円（月30回）/ スタンダード 月額1,980円（月100回）/ プレミアム 月額2,980円（無制限）。すべて税込。プランはいつでもアップグレード・ダウングレード・解約が可能です。ダウングレード・解約は次の請求期間から適用されます。</p>
 <h3 style="margin:20px 0 8px;font-weight:600">第4条（禁止事項）</h3>
 <p>法令違反行為、第三者の権利侵害、サービスの不正利用、リバースエンジニアリング等を禁止します。</p>
 <h3 style="margin:20px 0 8px;font-weight:600">第5条（知的財産権）</h3>
@@ -666,7 +1395,7 @@ const LEGAL = {
 <h3 style="margin:20px 0 8px;font-weight:600">第6条（免責）</h3>
 <p>当社は本サービスの完全性・正確性を保証しません。天災・第三者による攻撃等の不可抗力による損害については責任を負いません。</p>
 <h3 style="margin:20px 0 8px;font-weight:600">第7条（準拠法・管轄）</h3>
-<p>本規約は日本法に準拠し、さいたま地方裁判所を第一審の専属的合意管轄裁判所とします。</p>`,
+<p>本規約は日本法に準拠し、東京地方裁判所を第一審の専属的合意管轄裁判所とします。</p>`,
 
   privacy: `<h2 style="margin-bottom:16px;font-size:24px;font-weight:700">プライバシーポリシー</h2>
 <p style="color:#525252;margin-bottom:24px">最終更新日: 2026年4月17日</p>
@@ -681,7 +1410,7 @@ const LEGAL = {
 <h3 style="margin:20px 0 8px;font-weight:600">5. Cookie・アクセス解析</h3>
 <p>当社はGoogle Analyticsを使用してサービスの利用状況を分析します。これによりCookieが使用される場合があります。</p>
 <h3 style="margin:20px 0 8px;font-weight:600">6. 開示・訂正・削除</h3>
-<p>ユーザーは当社に対し、個人情報の開示・訂正・削除を請求できます。お問い合わせ先: info@puentework.com</p>
+<p>ユーザーは当社に対し、個人情報の開示・訂正・削除を請求できます。お問い合わせ先: <a href="https://www.puentework.com/" target="_blank" style="color:var(--accent)">https://www.puentework.com/</a></p>
 <h3 style="margin:20px 0 8px;font-weight:600">7. 管理者</h3>
 <p>株式会社プエンテ 代表取締役 保科一男<br>〒359-1106 埼玉県所沢市東狭山ヶ丘2-2951-44 アートベースA-202</p>`,
 
@@ -691,14 +1420,15 @@ const LEGAL = {
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">代表者</td><td style="padding:12px 0">保科 一男</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">所在地</td><td style="padding:12px 0">〒359-1106 埼玉県所沢市東狭山ヶ丘2-2951-44 アートベースA-202</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">電話番号</td><td style="padding:12px 0">お問い合わせフォームよりご連絡ください</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">メール</td><td style="padding:12px 0">info@puentework.com</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">お問い合わせ</td><td style="padding:12px 0"><a href="https://www.puentework.com/" target="_blank" style="color:var(--accent)">https://www.puentework.com/</a></td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">URL</td><td style="padding:12px 0">https://puente-saas.com</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">サービス名</td><td style="padding:12px 0">Punete Micro SaaS Store</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">販売価格</td><td style="padding:12px 0">初期費用: 330,000円（税込）/ 月額費用: 無料 / 売上レベニューシェア: プエンテ70% ユーザー30%</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">販売価格</td><td style="padding:12px 0">【Micro SaaS オーナー向け】初期費用: 330,000円（税込）/ 月額費用: 無料 / 売上レベニューシェア: プエンテ70% オーナー30%<br>【エンドユーザー向けサブスク】無料（月3回）/ ベーシック 月額980円（月30回）/ スタンダード 月額1,980円（月100回）/ プレミアム 月額2,980円（無制限）※すべて税込</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">支払方法</td><td style="padding:12px 0">クレジットカード（Stripe決済）</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">支払時期</td><td style="padding:12px 0">初期費用: サービス申込時 / レベニューシェア: 月次集計、翌月末振込</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">サービス提供時期</td><td style="padding:12px 0">初期費用お支払い確認後、3営業日以内にサービスローンチ</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">返品・キャンセル</td><td style="padding:12px 0">デジタルサービスの性質上、サービス提供開始後の返金は原則不可。サービスローンチ前のキャンセルは全額返金。</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">支払時期</td><td style="padding:12px 0">初期費用: サービス申込時 / エンドユーザーサブスク: 毎月自動課金 / レベニューシェア: 月次集計、翌月末振込</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">サービス提供時期</td><td style="padding:12px 0">初期費用お支払い確認後、3営業日以内にサービスローンチ / エンドユーザーサブスク: お支払い完了後即時利用可能</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">解約・ダウングレード</td><td style="padding:12px 0">エンドユーザーサブスクはいつでも解約・ダウングレード可能。変更は次の請求期間から適用されます。日割り返金はありません。</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">返品・キャンセル</td><td style="padding:12px 0">デジタルサービスの性質上、サービス提供開始後の返金は原則不可。Micro SaaSローンチ前のキャンセルは全額返金。</td></tr>
 <tr><td style="padding:12px 0;font-weight:600">動作環境</td><td style="padding:12px 0">最新のChrome, Safari, Firefox, Edge対応。スマートフォン・PC対応。</td></tr>
 </table>`
 };
@@ -732,7 +1462,7 @@ if (IS_DASHBOARD || IS_ADMIN) {
     if (session) {
       showDashboard();
       // Hide LP sections for dashboard subdomain
-      document.querySelectorAll('.hero, #apps, #process, #pricing').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.hero, #apps, #process, #faq, #pricing').forEach(el => el.style.display = 'none');
     } else {
       showAuth('login');
     }
@@ -744,6 +1474,19 @@ if (IS_DASHBOARD || IS_ADMIN) {
     if (appsEl) appsEl.scrollIntoView({ behavior: 'smooth' });
   }, 300);
 }
+
+// サムネイル画像: ロード成功でフォールバック非表示、失敗で画像非表示
+document.querySelectorAll('.thumb img').forEach(img => {
+  img.addEventListener('load', () => {
+    const fb = img.parentElement.querySelector('.fallback');
+    if (fb) fb.style.display = 'none';
+  });
+  img.addEventListener('error', () => { img.style.display = 'none'; });
+  if (img.complete && img.naturalWidth > 0) {
+    const fb = img.parentElement.querySelector('.fallback');
+    if (fb) fb.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

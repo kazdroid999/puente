@@ -3,6 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Unbound model: wall time up to 15min, CPU 30s
+# Required for Claude API calls that take 10-30s to respond
+usage_model = "unbound"
+
 [vars]
 ENVIRONMENT = "production"
 APP_ORIGIN = "https://puente-saas.com"
@@ -16,6 +20,7 @@ API_ORIGIN = "https://api.puente-saas.com"
 #   SUPABASE_URL
 #   SUPABASE_ANON_KEY
 #   RESEND_API_KEY
+#   CF_API_TOKEN (Pages custom domain registration)
 #   PRTIMES_API_KEY (optional)
 
 [[unsafe.custom_domains]]
