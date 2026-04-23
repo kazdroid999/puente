@@ -760,6 +760,53 @@ app.post('/internal/promo/run', auth, async (c) => {
   return c.json(result);
 });
 
+// ========== Stripe coupon reconcile (super_admin専用) ==========
+// DB の coupons 行に対応する Stripe coupon + promotion_code を冪等に作成する。
+// 既に Stripe 側に同一 promotion code が存在すればスキップ。
+// 過去の issueInitialDiscount() が stripe_coupon_id 等の存在しないカラムへ insert しようとして
+// サイレント失敗していた古い期間に作られたDB行を救済するための reconcile エンドポイント。
+app.post('/api/admin/reconcile-founder-coupons', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+
+  const companyIdFilter = c.req.query('company_id');
+  const s = sbAdmin(c.env);
+  let query = s.from('coupons').select('code,company_id,discount_percent').eq('discount_percent', 80);
+  if (companyIdFilter) query = query.eq('company_id', companyIdFilter);
+  const { data: rows, error } = await query;
+  if (error) return c.json({ error: error.message }, 400);
+
+  const stripe = stripeClient(c.env);
+  const results: Array<{ company_id: string; code: string; status: string; stripe_coupon_id?: string; note?: string }> = [];
+
+  for (const row of rows ?? []) {
+    // 既存 promotion_code を検索
+    try {
+      const existing = await stripe.promotionCodes.list({ code: row.code, limit: 1 });
+      if (existing.data.length > 0) {
+        results.push({ company_id: row.company_id, code: row.code, status: 'already_exists', stripe_coupon_id: existing.data[0].coupon?.toString() });
+        continue;
+      }
+      const coupon = await stripe.coupons.create({
+        percent_off: 80,
+        duration: 'once',
+        name: 'Puente Founder 80% OFF',
+        metadata: { company_id: row.company_id },
+      });
+      await stripe.promotionCodes.create({
+        coupon: coupon.id,
+        code: row.code,
+        max_redemptions: 1,
+        metadata: { company_id: row.company_id },
+      });
+      results.push({ company_id: row.company_id, code: row.code, status: 'created', stripe_coupon_id: coupon.id });
+    } catch (err: any) {
+      results.push({ company_id: row.company_id, code: row.code, status: 'error', note: err?.message || String(err) });
+    }
+  }
+  return c.json({ processed: results.length, results });
+});
+
 // ========== Micro SaaS App Engine ==========
 
 // 公開: アプリ一覧（公開済みのみ）

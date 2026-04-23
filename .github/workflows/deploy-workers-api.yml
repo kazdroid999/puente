@@ -1,0 +1,45 @@
+name: Deploy puente-store-api (Cloudflare Workers)
+
+# workers-api/ を Cloudflare Workers (puente-store-api) に自動デプロイ。
+# main への push で workers-api/ 配下に変更があった場合に動く。
+# Pages と違い Workers は Direct Upload モードのみのため、GitHub Actions 経由でのデプロイが標準。
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workers-api/**'
+      - '.github/workflows/deploy-workers-api.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-workers-api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: workers-api
+        run: npm ci || npm install
+
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1406a3260412719d49e409e5d735dfdd"
+          workingDirectory: workers-api
+          command: deploy
