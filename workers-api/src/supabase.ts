@@ -48,6 +48,9 @@ export function sbUser(env: Env, authHeader: string | null): SupabaseClient {
 }
 
 export async function isSuperAdmin(env: Env, userId: string): Promise<boolean> {
-  const { data } = await sb(env).from('profiles').select('role').eq('id', userId).single();
+  // profiles の SELECT RLS が `auth.uid() = id OR is_admin()` のため、anonクライアントでは
+  // auth.uid() が null になり自分以外の role が読めない。結果として常に false が返る。
+  // service_role クライアント (sbAdmin) で RLS をバイパスして role を直接取得する。
+  const { data } = await sbAdmin(env).from('profiles').select('role').eq('id', userId).single();
   return data?.role === 'super_admin';
 }
