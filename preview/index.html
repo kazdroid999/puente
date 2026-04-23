@@ -269,6 +269,19 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
 .nav ul.mobile-open a{font-size:16px}
 .nav ul.mobile-open .cta{display:block;text-align:center;margin-top:8px}
 @media(max-width:900px){.mobile-menu-btn{display:block}}
+/* Founder 80% OFF クーポンカード */
+.founder-coupon-card{background:#FFF5EF;border:2px solid var(--accent);border-radius:16px;padding:24px;margin-bottom:32px;display:none}
+.founder-coupon-card.active{display:block}
+.founder-coupon-card .fc-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.founder-coupon-card .fc-title{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:22px;letter-spacing:-.02em;margin-bottom:4px}
+.founder-coupon-card .fc-price{font-size:14px;color:var(--sub);margin-bottom:16px}
+.founder-coupon-card .fc-price strong{color:var(--ink);font-weight:700;font-size:16px}
+.founder-coupon-card .fc-code-box{background:#fff;border:1px solid var(--accent);border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.founder-coupon-card .fc-code-label{font-size:11px;color:var(--sub);margin-bottom:4px}
+.founder-coupon-card .fc-code{font-family:'Inter',monospace;font-weight:700;font-size:18px;letter-spacing:.15em;color:var(--ink);word-break:break-all}
+.founder-coupon-card .fc-copy-btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.founder-coupon-card .fc-copy-btn:hover{opacity:.8}
+.founder-coupon-card .fc-note{font-size:12px;color:var(--sub);margin-top:12px;line-height:1.6}
 .cat-daily{background:rgba(78,205,196,.1);color:#4ECDC4}
 .cat-creator{background:rgba(155,89,182,.1);color:#9B59B6}
 .cat-business{background:rgba(46,204,113,.1);color:#2ECC71}
@@ -563,6 +576,21 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
         <button class="btn btn-ghost" onclick="doLogout()">ログアウト</button>
       </div>
     </div>
+    <!-- Founder 80% OFF クーポンカード (初期費用未決済の法人がある時だけ表示) -->
+    <div id="founder-coupon-card" class="founder-coupon-card">
+      <div class="fc-badge">🎟️ Founder 80% OFF クーポン</div>
+      <div class="fc-title">初期費用 80% OFF</div>
+      <div class="fc-price">¥330,000 → <strong>¥66,000</strong>（税込）</div>
+      <div class="fc-code-box">
+        <div>
+          <div class="fc-code-label">クーポンコード（初期費用決済時に自動適用）</div>
+          <div class="fc-code" id="fc-code">—</div>
+        </div>
+        <button class="fc-copy-btn" onclick="copyFounderCoupon()" id="fc-copy-btn">コピー</button>
+      </div>
+      <div class="fc-note">1 社につき初回ローンチ時のみ有効。初期費用の Stripe Checkout でこのコードが自動適用されます。2 件目以降の企画は初期費用無料のためクーポン不要です。</div>
+    </div>
+
     <div class="dash-cards">
       <div class="dash-card"><div class="dc-num" id="dc-ideas">0</div><div class="dc-label">投稿した企画</div></div>
       <div class="dash-card"><div class="dc-num" id="dc-apps">0</div><div class="dc-label">承認済み / 稼働中</div></div>
@@ -936,6 +964,9 @@ async function loadDashboard() {
   if (_isSuperAdmin) {
     document.getElementById('btn-admin').style.display = '';
   }
+
+  // Founder 80% OFF クーポン表示（初期費用未決済の法人に紐づいた未消費クーポンを優先表示）
+  loadFounderCoupon().catch(e => console.error('Failed to load founder coupon', e));
 
   // Load projects via Workers API
   const result = await apiCall('/api/saas');
@@ -1424,6 +1455,41 @@ function filterApps(cat) {
   renderAiApps(cat);
 }
 loadAiApps();
+
+// ---- Founder 80% OFF クーポン表示 ----
+async function loadFounderCoupon() {
+  const card = document.getElementById('founder-coupon-card');
+  if (!card || !currentUser) return;
+  // Supabase client経由で当該ユーザーの会社とクーポンを取得（RLS: owner_coupons / owner_companies）
+  const { data: companies, error: cerr } = await _sb
+    .from('companies')
+    .select('id,first_launch_at')
+    .eq('owner_id', currentUser.id);
+  if (cerr || !companies || companies.length === 0) { card.classList.remove('active'); return; }
+  // 初期費用未決済（first_launch_at が無い）会社のみ対象
+  const unpaidCompanyIds = companies.filter(c => !c.first_launch_at).map(c => c.id);
+  if (unpaidCompanyIds.length === 0) { card.classList.remove('active'); return; }
+  const { data: coupons, error: kerr } = await _sb
+    .from('coupons')
+    .select('code,company_id')
+    .in('company_id', unpaidCompanyIds)
+    .eq('discount_percent', 80)
+    .limit(1);
+  if (kerr || !coupons || coupons.length === 0) { card.classList.remove('active'); return; }
+  document.getElementById('fc-code').textContent = coupons[0].code;
+  card.classList.add('active');
+}
+
+function copyFounderCoupon() {
+  const code = document.getElementById('fc-code').textContent;
+  if (!code || code === '—') return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('fc-copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ コピー済';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  }).catch(() => alert('コピーに失敗しました: ' + code));
+}
 
 // ---- SaaS card share ----
 const SHARE_PLATFORMS = [
