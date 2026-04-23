@@ -1,0 +1,44 @@
+name: Deploy puente-store (Cloudflare Pages)
+
+# puente-saas.com をホストしている Cloudflare Pages プロジェクト `puente-store` へ
+# 自動デプロイする GitHub Actions ワークフロー。
+#
+# プロジェクトは Direct Upload モード（Cloudflare Pages ダッシュボードで Git 連携不可）
+# のため、GitHub Actions で wrangler pages deploy を実行することで
+# 「main に push → 自動で本番反映」を実現する。
+
+on:
+  push:
+    branches:
+      - main
+    # preview/ ディレクトリ（LP 本体）または本ワークフロー自身が変わった時だけ走らせる。
+    # workers-api/ や docs の更新では動かない（無駄なデプロイを避ける）。
+    paths:
+      - 'preview/**'
+      - '.github/workflows/deploy-puente-store.yml'
+  # 手動トリガーも許可（UI から Run workflow できる）
+  workflow_dispatch:
+
+# 同じブランチでの連続 push を直前のジョブをキャンセルして最新だけデプロイ。
+concurrency:
+  group: deploy-puente-store-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy preview/ to Cloudflare Pages (puente-store)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1406a3260412719d49e409e5d735dfdd"
+          # --branch=main にすることで production ドメイン（puente-saas.com 等）に反映される
+          # --commit-hash で Cloudflare ダッシュボード上にも commit SHA が紐づく
+          command: pages deploy preview --project-name=puente-store --branch=main --commit-hash=${{ github.sha }}

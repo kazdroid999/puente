@@ -1,0 +1,36 @@
+name: Deploy puente-apps (Cloudflare Pages)
+
+# *.puente-saas.com の AI Micro SaaS アプリ群（handmade, plot, recipe 他 23 サブドメイン）を
+# ホストしている Cloudflare Pages プロジェクト `puente-apps` への自動デプロイ。
+#
+# apps-deploy/ ディレクトリが変わった時だけデプロイが走る。
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps-deploy/**'
+      - '.github/workflows/deploy-puente-apps.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-puente-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy apps-deploy/ to Cloudflare Pages (puente-apps)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1406a3260412719d49e409e5d735dfdd"
+          command: pages deploy apps-deploy --project-name=puente-apps --branch=main --commit-hash=${{ github.sha }}
