@@ -28,3 +28,10 @@ hostname = "api.puente-saas.com"
 
 [observability]
 enabled = true
+
+# ========== Cron Triggers ==========
+# 12:00 JST (3:00 UTC) 毎日: Founder 80% OFF クーポンの DB↔Stripe 同期を自動チェック。
+# DB に存在する coupon 行に対して Stripe 側 promotion_code が無ければ自動作成し self-heal する。
+# scheduled() ハンドラから reconcileAllFounderCoupons() を呼ぶ。
+[triggers]
+crons = ["0 3 * * *"]

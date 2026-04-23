@@ -15,7 +15,7 @@ import {
   handleWebhook,
   stripeClient,
 } from './stripe';
-import { issueInitialDiscount } from './coupons';
+import { issueInitialDiscount, reconcileAllFounderCoupons } from './coupons';
 import { analyzeBrief } from './ai-analyzer';
 import { runPromoQueue } from './promo';
 
@@ -761,50 +761,17 @@ app.post('/internal/promo/run', auth, async (c) => {
 });
 
 // ========== Stripe coupon reconcile (super_admin専用) ==========
-// DB の coupons 行に対応する Stripe coupon + promotion_code を冪等に作成する。
-// 既に Stripe 側に同一 promotion code が存在すればスキップ。
-// 過去の issueInitialDiscount() が stripe_coupon_id 等の存在しないカラムへ insert しようとして
-// サイレント失敗していた古い期間に作られたDB行を救済するための reconcile エンドポイント。
+// 共通ロジックは coupons.ts::reconcileAllFounderCoupons() に切り出し、
+// scheduled() cron からも再利用する。
 app.post('/api/admin/reconcile-founder-coupons', auth, async (c) => {
   const uid = c.get('userId');
   if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
-
-  const companyIdFilter = c.req.query('company_id');
-  const s = sbAdmin(c.env);
-  let query = s.from('coupons').select('code,company_id,discount_percent').eq('discount_percent', 80);
-  if (companyIdFilter) query = query.eq('company_id', companyIdFilter);
-  const { data: rows, error } = await query;
-  if (error) return c.json({ error: error.message }, 400);
-
-  const stripe = stripeClient(c.env);
-  const results: Array<{ company_id: string; code: string; status: string; stripe_coupon_id?: string; note?: string }> = [];
-
-  for (const row of rows ?? []) {
-    // 既存 promotion_code を検索
-    try {
-      const existing = await stripe.promotionCodes.list({ code: row.code, limit: 1 });
-      if (existing.data.length > 0) {
-        results.push({ company_id: row.company_id, code: row.code, status: 'already_exists', stripe_coupon_id: existing.data[0].coupon?.toString() });
-        continue;
-      }
-      const coupon = await stripe.coupons.create({
-        percent_off: 80,
-        duration: 'once',
-        name: 'Puente Founder 80% OFF',
-        metadata: { company_id: row.company_id },
-      });
-      await stripe.promotionCodes.create({
-        coupon: coupon.id,
-        code: row.code,
-        max_redemptions: 1,
-        metadata: { company_id: row.company_id },
-      });
-      results.push({ company_id: row.company_id, code: row.code, status: 'created', stripe_coupon_id: coupon.id });
-    } catch (err: any) {
-      results.push({ company_id: row.company_id, code: row.code, status: 'error', note: err?.message || String(err) });
-    }
+  try {
+    const results = await reconcileAllFounderCoupons(c.env, c.req.query('company_id'));
+    return c.json({ processed: results.length, results });
+  } catch (err: any) {
+    return c.json({ error: err?.message || String(err) }, 500);
   }
-  return c.json({ processed: results.length, results });
 });
 
 // ========== Micro SaaS App Engine ==========
@@ -1256,6 +1223,18 @@ app.onError((err, c) => {
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env) {
-    await runPromoQueue(env);
+    // 並列実行: プロモーション配信キュー + クーポン DB↔Stripe 自動同期
+    await Promise.allSettled([
+      runPromoQueue(env).catch((e) => console.error('[scheduled] runPromoQueue failed:', e)),
+      reconcileAllFounderCoupons(env)
+        .then((results) => {
+          const created = results.filter((r) => r.status === 'created').length;
+          const errors = results.filter((r) => r.status === 'error').length;
+          if (created > 0 || errors > 0) {
+            console.log(`[scheduled] coupon reconcile: ${created} created, ${errors} errors, ${results.length} total`);
+          }
+        })
+        .catch((e) => console.error('[scheduled] reconcileAllFounderCoupons failed:', e)),
+    ]);
   },
 };
