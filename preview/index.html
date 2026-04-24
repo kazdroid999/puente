@@ -810,7 +810,70 @@ const SUPABASE_URL = 'https://rzrewjgtgazdpstnkhbt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6cmV3amd0Z2F6ZHBzdG5raGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzI4OTksImV4cCI6MjA5MDkwODg5OX0.UmkAdfpfsLVgrzjf1qtQmAuXdsrccwiqsgQwcSGYawo';
 const API_BASE = 'https://api.puente-saas.com';
 
-const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ---- Cross-subdomain SSO: cookie-backed storage scoped to .puente-saas.com ----
+// ダッシュボードでログインしたセッションを closet-ai.puente-saas.com など
+// 全 Micro SaaS サブドメインに共有するため、localStorage ではなく
+// Domain=.puente-saas.com の cookie に保存する。
+function makePuenteCookieStorage() {
+  const isLocal = /^localhost|^127\.|\.local$/.test(location.hostname);
+  const domainAttr = isLocal ? '' : '; Domain=.puente-saas.com';
+  const secureAttr = isLocal ? '' : '; Secure';
+  const CHUNK = 3000;
+  function readAll() {
+    const o = {};
+    (document.cookie || '').split('; ').filter(Boolean).forEach(p => {
+      const i = p.indexOf('=');
+      o[decodeURIComponent(p.slice(0,i))] = decodeURIComponent(p.slice(i+1));
+    });
+    return o;
+  }
+  function write(name, value) {
+    document.cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value) +
+      '; Path=/; Max-Age=31536000; SameSite=Lax' + secureAttr + domainAttr;
+  }
+  function del(name) {
+    document.cookie = encodeURIComponent(name) + '=; Path=/; Max-Age=0; SameSite=Lax' + secureAttr + domainAttr;
+  }
+  function cleanupKey(k) {
+    const all = readAll();
+    Object.keys(all).forEach(n => { if (n === k || n.startsWith(k + '.')) del(n); });
+  }
+  return {
+    getItem(key) {
+      const all = readAll();
+      if (all[key] !== undefined) return all[key];
+      const parts = [];
+      for (let i = 0; ; i++) {
+        const v = all[key + '.' + i];
+        if (v === undefined) break;
+        parts.push(v);
+      }
+      return parts.length ? parts.join('') : null;
+    },
+    setItem(key, value) {
+      cleanupKey(key);
+      const v = String(value ?? '');
+      if (v.length <= CHUNK) {
+        write(key, v);
+      } else {
+        for (let i = 0, o = 0; o < v.length; i++, o += CHUNK) {
+          write(key + '.' + i, v.slice(o, o + CHUNK));
+        }
+      }
+    },
+    removeItem(key) { cleanupKey(key); },
+  };
+}
+
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    storage: makePuenteCookieStorage(),
+    storageKey: 'sb-puente-auth',
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  }
+});
 let currentUser = null;
 
 // ---- Auth State ----
