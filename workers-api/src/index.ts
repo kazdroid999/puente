@@ -433,6 +433,61 @@ app.patch('/api/saas/:id/status', auth, async (c) => {
   return c.json({ saas: data });
 });
 
+// オーナー公開承認: preview のプロジェクトを published に遷移させる
+// saas_apps.is_published も true にしてLP/apps一覧に表示される。
+app.post('/api/saas/:id/publish', auth, async (c) => {
+  const uid = c.get('userId');
+  const id = c.req.param('id');
+
+  // オーナー確認 (RLS が owner_id で守るが明示的にもチェック)
+  const db = sbu(c);
+  const { data: project, error: pErr } = await db
+    .from('saas_projects')
+    .select('id,status,slug,category,name,company_id')
+    .eq('id', id)
+    .single();
+  if (pErr || !project) return c.json({ error: 'not found' }, 404);
+
+  // オーナー or super_admin のみ
+  if (!(await isSuperAdmin(c.env, uid))) {
+    const { data: company } = await db.from('companies').select('id').eq('id', project.company_id).eq('owner_id', uid).maybeSingle();
+    if (!company) return c.json({ error: 'forbidden' }, 403);
+  }
+
+  // status が preview または ready_for_review の時のみ公開可
+  if (!['preview', 'ready_for_review'].includes(project.status)) {
+    return c.json({ error: `このプロジェクトはプレビュー段階ではありません (status=${project.status})` }, 400);
+  }
+
+  // saas_projects.status を published に、saas_apps.is_published を true に
+  const admin = sbAdmin(c.env);
+  await admin.from('saas_projects').update({ status: 'published' }).eq('id', id);
+  await admin.from('saas_apps').update({ is_published: true }).eq('slug', project.slug);
+
+  return c.json({ ok: true, id, status: 'published', public_url: `https://${project.slug}.puente-saas.com` });
+});
+
+// オーナー公開停止: published → paused に戻す
+app.post('/api/saas/:id/unpublish', auth, async (c) => {
+  const uid = c.get('userId');
+  const id = c.req.param('id');
+  const db = sbu(c);
+  const { data: project } = await db
+    .from('saas_projects')
+    .select('id,slug,company_id,status')
+    .eq('id', id)
+    .single();
+  if (!project) return c.json({ error: 'not found' }, 404);
+  if (!(await isSuperAdmin(c.env, uid))) {
+    const { data: company } = await db.from('companies').select('id').eq('id', project.company_id).eq('owner_id', uid).maybeSingle();
+    if (!company) return c.json({ error: 'forbidden' }, 403);
+  }
+  const admin = sbAdmin(c.env);
+  await admin.from('saas_projects').update({ status: 'paused' }).eq('id', id);
+  await admin.from('saas_apps').update({ is_published: false }).eq('slug', project.slug);
+  return c.json({ ok: true, id, status: 'paused' });
+});
+
 // 修正再投稿（needs_improvement / rejected の��）
 app.put('/api/saas/:id/resubmit', auth, async (c) => {
   const id = c.req.param('id');

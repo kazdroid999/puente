@@ -602,6 +602,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
     <div class="dash-tab-bar">
       <div class="dash-tab active" onclick="switchDashTab('apps')" id="tab-apps">🚀 利用中のSaaS</div>
       <div class="dash-tab" onclick="switchDashTab('ideas')" id="tab-ideas">📋 投稿した企画</div>
+      <div class="dash-tab" onclick="switchDashTab('published')" id="tab-published">✅ 公開したSaaS</div>
     </div>
 
     <!-- 利用中の Micro SaaS -->
@@ -611,6 +612,16 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       </div>
       <div style="text-align:center;margin-top:8px">
         <a href="https://apps.puente-saas.com" class="btn btn-ghost" style="font-size:13px;padding:10px 24px">🔍 すべてのSaaSアプリを見る</a>
+      </div>
+    </div>
+
+    <!-- 公開したSaaS（オーナー自分が公開中のもの） -->
+    <div id="dash-panel-published" style="display:none">
+      <div id="published-list">
+        <p style="color:var(--sub)">公開中のSaaSはまだありません。プレビュー承認すると ここに表示されます。</p>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <a href="#apps" class="btn btn-ghost" style="font-size:13px;padding:10px 24px" onclick="hideAdminPanel()">🔍 ストアの公開一覧を見る</a>
       </div>
     </div>
 
@@ -1041,8 +1052,32 @@ async function loadDashboard() {
 function switchDashTab(tab) {
   document.getElementById('dash-panel-apps').style.display = tab === 'apps' ? '' : 'none';
   document.getElementById('dash-panel-ideas').style.display = tab === 'ideas' ? '' : 'none';
+  document.getElementById('dash-panel-published').style.display = tab === 'published' ? '' : 'none';
   document.getElementById('tab-apps').classList.toggle('active', tab === 'apps');
   document.getElementById('tab-ideas').classList.toggle('active', tab === 'ideas');
+  document.getElementById('tab-published').classList.toggle('active', tab === 'published');
+  if (tab === 'published') loadPublishedList();
+}
+
+// ---- Published SaaS list (自分が公開したSaaS) ----
+function loadPublishedList() {
+  const container = document.getElementById('published-list');
+  if (!container || !_userProjects) return;
+  const published = _userProjects.filter(p => p.status === 'published');
+  if (published.length === 0) {
+    container.innerHTML = '<p style="color:var(--sub)">公開中のSaaSはまだありません。プレビュー承認すると ここに表示されます。</p>';
+    return;
+  }
+  container.innerHTML = published.map(p => {
+    const url = p.public_url || (p.slug ? 'https://' + p.slug + '.puente-saas.com' : '#');
+    return `<a class="my-app-card" href="${escHtml(url)}" target="_blank" rel="noopener">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:15px">${escHtml(p.name)}</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:4px">${escHtml(p.category)} · ${escHtml(url)}</div>
+      </div>
+      <span style="color:var(--accent);font-size:20px">↗</span>
+    </a>`;
+  }).join('');
 }
 
 // ---- Project Detail (AI Plan) ----
@@ -1152,6 +1187,23 @@ function renderProjectDetail(idx) {
         <ul>${(plan.kpis || []).map(k => '<li>' + escHtml(k) + '</li>').join('')}</ul>
       </div>
     </div>
+    <!-- プレビュー確認 & 公開承認（preview / ready_for_review のみ） -->
+    ${(p.status === 'preview' || p.status === 'ready_for_review') ? `<div class="ai-card" style="border:2px solid var(--accent);background:#FFF5EF">
+      <h4>🎬 プレビュー確認 → 公開する</h4>
+      <p style="margin-bottom:12px">AI が自動開発を完了しました。プレビューを確認し、問題なければ「公開する」を押してください。公開後は <code>${p.slug ? `${escHtml(p.slug)}.puente-saas.com` : 'slug決定後のサブドメイン'}</code> でアクセス可能になります。</p>
+      ${p.preview_url ? `<p style="margin-bottom:12px"><a href="${escHtml(p.preview_url)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 20px;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;text-decoration:none;font-weight:600">🔗 プレビューを開く</a></p>` : '<p style="color:var(--sub);font-size:13px;margin-bottom:12px">プレビュー URL を取得中...</p>'}
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="publishProject('${p.id}')" style="padding:12px 24px;font-size:15px;font-weight:700">✅ 公開する</button>
+        <button class="btn btn-ghost" onclick="requestRework('${p.id}')" style="padding:12px 24px;font-size:14px">🔧 やり直しを依頼</button>
+      </div>
+    </div>` : ''}
+    <!-- 公開中の案内 -->
+    ${p.status === 'published' ? `<div class="ai-card" style="border:2px solid #2E7D32;background:#E8F5E9">
+      <h4>🚀 公開中</h4>
+      <p style="margin-bottom:12px">${p.public_url ? `<a href="${escHtml(p.public_url)}" target="_blank" rel="noopener" style="color:#1B5E20;font-weight:600">${escHtml(p.public_url)} ↗</a>` : (p.slug ? `<a href="https://${escHtml(p.slug)}.puente-saas.com" target="_blank" rel="noopener" style="color:#1B5E20;font-weight:600">https://${escHtml(p.slug)}.puente-saas.com ↗</a>` : '公開中')}</p>
+      <p style="font-size:13px;color:var(--sub)">ストアトップの「AI Micro SaaS アプリ」一覧にも自動掲載されます。</p>
+      <div style="margin-top:12px"><button class="btn btn-ghost" onclick="unpublishProject('${p.id}')" style="padding:8px 16px;font-size:13px;color:#C62828;border-color:#C62828">⏸️ 公開停止</button></div>
+    </div>` : ''}
     <!-- プロモーション状態 -->
     ${p.status === 'auto_dev' || p.status === 'approved' || p.status === 'published' ? '<div class="ai-card"><h4>SNS プロモーション</h4><p>✅ 承認済み — PR Times / Wix Blog / X / Instagram / YouTube Short のプロモーションキューに自動登録されました。</p></div>' : ''}
     ${p.status === 'needs_improvement' || p.status === 'rejected' ? `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
@@ -1354,13 +1406,11 @@ async function loadAdminProjects() {
         '<td>' + new Date(p.created_at).toLocaleDateString('ja-JP') + '</td>' +
         '<td><select onchange="adminChangeStatus(\'' + p.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">' +
           '<option value="">操作...</option>' +
-          '<option value="auto_dev">自動開発</option>' +
-          '<option value="approved">承認</option>' +
-          '<option value="needs_improvement">改善提案</option>' +
-          '<option value="in_development">開発開始</option>' +
-          '<option value="published">公開</option>' +
-          '<option value="rejected">却下</option>' +
-          '<option value="paused">一時停止</option>' +
+          // 通常は AI 自動解析 → 85点以上で auto_dev 自動遷移 → preview 自動到達 → オーナーが公開ボタンで published
+          // 以下は例外時の手動オーバーライドのみに絞る
+          '<option value="auto_dev">🚀 自動開発を強制実行</option>' +
+          '<option value="rejected">❌ 却下</option>' +
+          '<option value="paused">⏸️ 公開停止</option>' +
         '</select></td>' +
       '</tr>';
     }).join('') +
@@ -1373,6 +1423,38 @@ async function adminChangeStatus(projectId, newStatus) {
   await apiCall('/api/saas/' + projectId + '/status', 'PATCH', { status: newStatus });
   loadAdminProjects();
   loadAdminOverview();
+}
+
+// ユーザー公開承認
+async function publishProject(projectId) {
+  if (!confirm('このSaaSを公開しますか？公開後はサブドメインでアクセス可能になり、ストアトップの一覧にも掲載されます。')) return;
+  const res = await apiCall('/api/saas/' + projectId + '/publish', 'POST');
+  if (res?.ok) {
+    alert('✅ 公開しました: ' + (res.public_url || ''));
+    loadDashboard();
+  } else {
+    alert('公開に失敗しました: ' + (res?.error || 'unknown'));
+  }
+}
+
+// オーナー公開停止
+async function unpublishProject(projectId) {
+  if (!confirm('このSaaSを公開停止しますか？ユーザーはアクセスできなくなります。')) return;
+  const res = await apiCall('/api/saas/' + projectId + '/unpublish', 'POST');
+  if (res?.ok) {
+    alert('⏸️ 公開停止しました');
+    loadDashboard();
+  } else {
+    alert('公開停止に失敗しました: ' + (res?.error || 'unknown'));
+  }
+}
+
+// やり直し依頼（サポートページに誘導 or ステータス戻す）
+async function requestRework(projectId) {
+  const note = prompt('やり直し理由を教えてください（サポート宛て）');
+  if (!note) return;
+  alert('承知しました。保守チームに連絡します: ' + note);
+  // 将来: support ticket 作成 API
 }
 
 async function loadAdminUsers() {
