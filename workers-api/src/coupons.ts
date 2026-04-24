@@ -11,9 +11,46 @@ export type ReconcileResult = { company_id: string; code: string; status: 'alrea
  * DB の coupons 行に対応する Stripe coupon + promotion_code を冪等に作成する。
  * 既に Stripe 側に同一 promotion code が存在すればスキップ。
  * scheduled() からも /api/admin/reconcile-founder-coupons からも呼ばれる共通ロジック。
+ *
+ * 2 段階の救済を行う:
+ * 1. 初期費用未決済の会社でクーポン行が未作成なものに対して DB insert（`PUENTE-<first8>-FND`）
+ * 2. coupons 行に対して Stripe 側 promotion_code が無ければ作成
+ *
+ * これにより「会社は登録済みだがクーポン行ごと無い」「クーポン行はあるが Stripe 側無い」
+ * いずれの乖離も 24 時間以内に自動回復する。
  */
 export async function reconcileAllFounderCoupons(env: Env, companyIdFilter?: string): Promise<ReconcileResult[]> {
   const s = sbAdmin(env);
+
+  // Step 1: 会社はあるのにクーポン行が無い企業に対して DB insert
+  let companyQuery = s
+    .from('companies')
+    .select('id,first_launch_at')
+    .is('first_launch_at', null);
+  if (companyIdFilter) companyQuery = companyQuery.eq('id', companyIdFilter);
+  const { data: unpaidCompanies, error: cErr } = await companyQuery;
+  if (cErr) throw new Error(`reconcile company query failed: ${cErr.message}`);
+
+  if (unpaidCompanies && unpaidCompanies.length > 0) {
+    const unpaidIds = unpaidCompanies.map((c) => c.id);
+    const { data: existingCoupons } = await s
+      .from('coupons')
+      .select('company_id')
+      .in('company_id', unpaidIds)
+      .eq('discount_percent', 80);
+    const haveCoupon = new Set((existingCoupons ?? []).map((c) => c.company_id));
+    const missing = unpaidCompanies.filter((c) => !haveCoupon.has(c.id));
+    if (missing.length > 0) {
+      const inserts = missing.map((c) => ({
+        company_id: c.id,
+        code: `PUENTE-${c.id.slice(0, 8).toUpperCase()}-FND`,
+        discount_percent: 80,
+      }));
+      await s.from('coupons').insert(inserts);
+    }
+  }
+
+  // Step 2: DB 全 80% クーポンに対して Stripe 側を同期
   let query = s.from('coupons').select('code,company_id,discount_percent').eq('discount_percent', 80);
   if (companyIdFilter) query = query.eq('company_id', companyIdFilter);
   const { data: rows, error } = await query;
