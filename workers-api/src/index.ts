@@ -462,10 +462,19 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
 
   // saas_projects.status を published に、saas_apps.is_published を true に
   const admin = sbAdmin(c.env);
-  await admin.from('saas_projects').update({ status: 'published' }).eq('id', id);
-  await admin.from('saas_apps').update({ is_published: true }).eq('slug', project.slug);
+  const { error: pUpdErr } = await admin.from('saas_projects').update({ status: 'published' }).eq('id', id);
+  if (pUpdErr) return c.json({ error: 'project update failed: ' + pUpdErr.message }, 500);
 
-  return c.json({ ok: true, id, status: 'published', public_url: `https://${project.slug}.puente-saas.com` });
+  const { error: aUpdErr, data: updatedApp } = await admin
+    .from('saas_apps')
+    .update({ is_published: true })
+    .eq('slug', project.slug)
+    .select('id,slug,is_published')
+    .single();
+  if (aUpdErr) return c.json({ error: 'saas_apps update failed: ' + aUpdErr.message, project_status: 'published', app_update_failed: true }, 500);
+  if (!updatedApp) return c.json({ error: `saas_apps row not found for slug=${project.slug}`, project_status: 'published' }, 500);
+
+  return c.json({ ok: true, id, status: 'published', public_url: `https://${project.slug}.puente-saas.com`, app: updatedApp });
 });
 
 // Phase 2: KPI 収集を手動トリガー (super_admin only — 検証/デバッグ/即時実行用)
