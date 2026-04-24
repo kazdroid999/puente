@@ -1185,91 +1185,95 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
     return c.json({ error: 'plan must be "basic", "standard", or "premium"' }, 400);
   }
 
-  // Get app info
-  const { data: appData } = await sb(c.env)
-    .from('saas_apps')
-    .select('id,slug,name,emoji,stripe_product_id')
-    .eq('slug', slug)
-    .single();
-  if (!appData) return c.json({ error: 'app not found' }, 404);
-
-  // Get user email from profile or auth
-  const { data: profile } = await sbu(c)
-    .from('profiles')
-    .select('id,display_name')
-    .eq('id', uid)
-    .single();
-
-  // Get user's Supabase auth email via admin (requires service role key)
-  let customerEmail = '';
   try {
-    const { data: { user: authUser } } = await sbAdmin(c.env).auth.admin.getUserById(uid);
-    customerEmail = authUser?.email || '';
-  } catch(e) {
-    // Fallback: try to get email from profiles table
-    const { data: emailProfile } = await sb(c.env).from('profiles').select('email').eq('id', uid).single();
-    customerEmail = emailProfile?.email || '';
-  }
-  if (!customerEmail) return c.json({ error: 'ユーザーメールアドレスが取得できません' }, 400);
-
-  const stripe = stripeClient(c.env);
-
-  // Plan config
-  const planConfig: Record<string, { name: string; price: number }> = {
-    basic:    { name: 'Basic（月30回）', price: 980 },
-    standard: { name: 'Standard（月100回）', price: 1980 },
-    premium:  { name: 'Premium（無制限）', price: 2980 },
-  };
-  const plan = planConfig[planKey];
-
-  // Lazy-create Stripe Product + Prices if not exists
-  let productId = appData.stripe_product_id;
-  if (!productId) {
-    const product = await stripe.products.create({
-      name: `${appData.emoji} ${appData.name} — Punete Micro SaaS`,
-      metadata: { app_id: appData.id, slug: appData.slug },
-    });
-    productId = product.id;
-    await sb(c.env)
+    // Get app info (admin で RLS bypass — 誰でも published app は見える前提)
+    const { data: appData, error: appErr } = await sbAdmin(c.env)
       .from('saas_apps')
-      .update({ stripe_product_id: productId })
-      .eq('id', appData.id);
-  }
+      .select('id,slug,name,emoji,stripe_product_id')
+      .eq('slug', slug)
+      .single();
+    if (appErr || !appData) return c.json({ error: 'app not found: ' + (appErr?.message || slug) }, 404);
 
-  // Find or create price for this plan
-  const existingPrices = await stripe.prices.list({
-    product: productId,
-    active: true,
-    limit: 10,
-  });
-  let priceId = existingPrices.data.find(
-    (p) => p.unit_amount === plan.price && p.recurring?.interval === 'month'
-  )?.id;
+    // Get user's Supabase auth email via admin (requires service role key)
+    let customerEmail = '';
+    try {
+      const { data: { user: authUser } } = await sbAdmin(c.env).auth.admin.getUserById(uid);
+      customerEmail = authUser?.email || '';
+    } catch(e) {
+      // Fallback: try to get email from profiles table (admin で RLS bypass)
+      const { data: emailProfile } = await sbAdmin(c.env).from('profiles').select('email').eq('id', uid).single();
+      customerEmail = emailProfile?.email || '';
+    }
+    if (!customerEmail) return c.json({ error: 'ユーザーメールアドレスが取得できません' }, 400);
 
-  if (!priceId) {
-    const newPrice = await stripe.prices.create({
+    const stripe = stripeClient(c.env);
+
+    // Plan config
+    const planConfig: Record<string, { name: string; price: number }> = {
+      basic:    { name: 'Basic（月30回）', price: 980 },
+      standard: { name: 'Standard（月100回）', price: 1980 },
+      premium:  { name: 'Premium（無制限）', price: 2980 },
+    };
+    const plan = planConfig[planKey];
+
+    // Lazy-create Stripe Product + Prices if not exists
+    // NOTE: update は sbAdmin で実行する必要あり (user JWT の sb() だと RLS で blocked)
+    let productId = appData.stripe_product_id;
+    if (!productId) {
+      const product = await stripe.products.create({
+        name: `${appData.emoji || ''} ${appData.name} — Punete Micro SaaS`.trim(),
+        metadata: { app_id: appData.id, slug: appData.slug },
+      });
+      productId = product.id;
+      const { error: upErr } = await sbAdmin(c.env)
+        .from('saas_apps')
+        .update({ stripe_product_id: productId })
+        .eq('id', appData.id);
+      if (upErr) console.error('[checkout] saas_apps.stripe_product_id 保存失敗:', upErr);
+    }
+
+    // Find or create price for this plan
+    const existingPrices = await stripe.prices.list({
       product: productId,
-      unit_amount: plan.price,
-      currency: 'jpy',
-      recurring: { interval: 'month' },
-      tax_behavior: 'inclusive',
-      metadata: { app_id: appData.id, plan_name: planKey },
+      active: true,
+      limit: 100,
     });
-    priceId = newPrice.id;
-  }
+    let priceId = existingPrices.data.find(
+      (p) => p.unit_amount === plan.price && p.recurring?.interval === 'month' && p.currency === 'jpy'
+    )?.id;
 
-  // Determine origin for success/cancel URLs
-  const origin = c.req.header('origin') || `https://${slug}.puente-saas.com`;
+    if (!priceId) {
+      const newPrice = await stripe.prices.create({
+        product: productId,
+        unit_amount: plan.price,
+        currency: 'jpy',
+        recurring: { interval: 'month' },
+        tax_behavior: 'inclusive',
+        metadata: { app_id: appData.id, plan_name: planKey },
+      });
+      priceId = newPrice.id;
+    }
 
-  // Create Checkout Session (no Connect split for official Puente apps — 100% Puente revenue)
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    customer_email: customerEmail,
-    allow_promotion_codes: true,
-    success_url: `${origin}?checkout=success`,
-    cancel_url: `${origin}?checkout=cancel`,
-    subscription_data: {
+    // Determine origin for success/cancel URLs
+    const origin = c.req.header('origin') || `https://${slug}.puente-saas.com`;
+
+    // Create Checkout Session (no Connect split for official Puente apps — 100% Puente revenue)
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer_email: customerEmail,
+      allow_promotion_codes: true,
+      success_url: `${origin}?checkout=success`,
+      cancel_url: `${origin}?checkout=cancel`,
+      subscription_data: {
+        metadata: {
+          app_id: appData.id,
+          app_slug: appData.slug,
+          plan_name: planKey,
+          user_id: uid,
+          kind: 'app_subscription',
+        },
+      },
       metadata: {
         app_id: appData.id,
         app_slug: appData.slug,
@@ -1277,17 +1281,16 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
         user_id: uid,
         kind: 'app_subscription',
       },
-    },
-    metadata: {
-      app_id: appData.id,
-      app_slug: appData.slug,
-      plan_name: planKey,
-      user_id: uid,
-      kind: 'app_subscription',
-    },
-  });
+    });
 
-  return c.json({ url: session.url, session_id: session.id });
+    return c.json({ url: session.url, session_id: session.id });
+  } catch (e: any) {
+    // Stripe / DB の実エラー内容をフロントに返す（decode して原因切り分け容易に）
+    const msg = e?.message || 'unknown error';
+    const code = e?.code || e?.type || null;
+    console.error('[checkout] failed:', msg, code, e);
+    return c.json({ error: msg, code, kind: 'checkout_failed' }, 500);
+  }
 });
 
 // ---------- fallback ----------
