@@ -16,6 +16,42 @@ import { sb, sbAdmin } from './supabase';
 import { runAutoDev } from './auto-dev';
 import { SCORING_RUBRIC, SCORING_RUBRIC_VERSION } from './scoring-rubric';
 
+// Phase 2 自己改善ループ: 類似 published SaaS の直近 KPI を system prompt に RAG 注入。
+// fetch_similar_published_saas RPC で DB から直接引く。
+// データが無い/エラーの場合は空文字を返し、フォールバックで現行通り動作。
+async function fetchSimilarCasesPrompt(env: Env, brief: SaasBrief): Promise<string> {
+  try {
+    const s = sbAdmin(env);
+    const { data, error } = await s.rpc('fetch_similar_published_saas', {
+      p_category: brief.category ?? null,
+      p_tam_min: null,
+      p_tam_max: null,
+      p_limit: 5,
+    });
+    if (error || !data || data.length === 0) return '';
+    const lines = (data as any[]).map((c: any) => {
+      const conv = c.conversion_rate != null ? `${(c.conversion_rate * 100).toFixed(1)}%` : 'N/A';
+      const ret = c.retention_30d != null ? `${(c.retention_30d * 100).toFixed(1)}%` : 'N/A';
+      const mrr = c.mrr_jpy != null ? `¥${Number(c.mrr_jpy).toLocaleString()}` : 'N/A';
+      const users = c.active_users != null ? `${c.active_users}人` : 'N/A';
+      return `- [${c.name}] category=${c.category}, conversion=${conv}, retention30d=${ret}, MRR=${mrr}, active_users=${users}`;
+    }).join('\n');
+    return `
+
+## 類似過去事例（同カテゴリの public SaaS 実績）
+以下は本企画と同カテゴリで public 公開されている既存 SaaS の直近 KPI 実績です。
+本企画を評価する際、これらと比較して「より高いスコアをつけるに値するか」を相対的に判定してください。
+${lines}
+
+これらの実績データを踏まえて、本企画が同カテゴリの既存事例より成功確率が高いと判断できる場合は
+profitability を重点的に評価し、逆に既存事例を下回る見込みなら改善提案でその差分を示してください。
+`;
+  } catch (e) {
+    console.error('[AI Analyzer] fetchSimilarCasesPrompt failed (non-fatal):', e);
+    return '';
+  }
+}
+
 const AUTO_DEV_THRESHOLD = 85;    // 自動開発トリガー
 const IMPROVEMENT_THRESHOLD = 60; // 改善提案ライン（60〜84は needs_improvement）
 // < 60 は rejected
@@ -79,10 +115,13 @@ export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): 
   await sbAdmin(env).from('saas_projects').update({ status: 'ai_analyzing' }).eq('id', saasId);
   console.log(`[AI Analyzer] Status updated to ai_analyzing for ${saasId}`);
 
+  // Phase 2 RAG: 同カテゴリの直近 published SaaS 実績を system prompt に注入
+  const similarCasesPrompt = await fetchSimilarCasesPrompt(env, brief);
+
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT + similarCasesPrompt,
     messages: [
       {
         role: 'user',

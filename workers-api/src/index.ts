@@ -16,6 +16,7 @@ import {
   stripeClient,
 } from './stripe';
 import { issueInitialDiscount, reconcileAllFounderCoupons } from './coupons';
+import { collectDailyKpi } from './performance-collector';
 import { analyzeBrief } from './ai-analyzer';
 import { runPromoQueue } from './promo';
 
@@ -465,6 +466,18 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
   await admin.from('saas_apps').update({ is_published: true }).eq('slug', project.slug);
 
   return c.json({ ok: true, id, status: 'published', public_url: `https://${project.slug}.puente-saas.com` });
+});
+
+// Phase 2: KPI 収集を手動トリガー (super_admin only — 検証/デバッグ/即時実行用)
+app.post('/api/admin/collect-kpi', auth, async (c) => {
+  const uid = c.get('userId');
+  if (!(await isSuperAdmin(c.env, uid))) return c.json({ error: 'forbidden' }, 403);
+  try {
+    const result = await collectDailyKpi(c.env);
+    return c.json(result);
+  } catch (err: any) {
+    return c.json({ error: err?.message || String(err) }, 500);
+  }
 });
 
 // オーナー公開停止: published → paused に戻す
@@ -1278,7 +1291,10 @@ app.onError((err, c) => {
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env) {
-    // 並列実行: プロモーション配信キュー + クーポン DB↔Stripe 自動同期
+    // 並列実行:
+    // 1. プロモーション配信キュー
+    // 2. クーポン DB↔Stripe 自動同期
+    // 3. published SaaS の日次 KPI スナップショット (Phase 2 自己改善ループ用)
     await Promise.allSettled([
       runPromoQueue(env).catch((e) => console.error('[scheduled] runPromoQueue failed:', e)),
       reconcileAllFounderCoupons(env)
@@ -1290,6 +1306,9 @@ export default {
           }
         })
         .catch((e) => console.error('[scheduled] reconcileAllFounderCoupons failed:', e)),
+      collectDailyKpi(env)
+        .then((r) => console.log(`[scheduled] KPI collected: ${r.saved}/${r.processed} apps`))
+        .catch((e) => console.error('[scheduled] collectDailyKpi failed:', e)),
     ]);
   },
 };
