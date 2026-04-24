@@ -865,9 +865,27 @@ function makePuenteCookieStorage() {
   };
 }
 
+const _puenteStorage = makePuenteCookieStorage();
+
+// 旧 localStorage → 新 cookie storage ワンタイム移行
+// (今までダッシュボードで localStorage 版でログインしていたユーザーを
+//  cookie 化して全サブドメイン SSO に引き上げるためのブリッジ)
+try {
+  const PROJECT_REF = 'rzrewjgtgazdpstnkhbt';
+  const OLD_KEY = 'sb-' + PROJECT_REF + '-auth-token';
+  const NEW_KEY = 'sb-puente-auth';
+  if (!_puenteStorage.getItem(NEW_KEY)) {
+    const old = localStorage.getItem(OLD_KEY);
+    if (old) {
+      _puenteStorage.setItem(NEW_KEY, old);
+      console.log('[sso] migrated localStorage session -> cookie');
+    }
+  }
+} catch(e) { console.warn('[sso] migration skipped:', e); }
+
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
-    storage: makePuenteCookieStorage(),
+    storage: _puenteStorage,
     storageKey: 'sb-puente-auth',
     persistSession: true,
     autoRefreshToken: true,
