@@ -771,10 +771,14 @@ async function upgradePlan(plan) {
   // Redirect to Stripe checkout via API
   try {
     const res = await apiCall('/api/apps/' + appConfig.slug + '/checkout', 'POST', { plan });
-    if (res.url) window.location.href = res.url;
-    else alert('チェックアウトの作成に失敗しました');
+    if (res.url) { window.location.href = res.url; return; }
+    // backend が {error, code, kind} を返した場合は詳細表示
+    const detail = [res?.error, res?.code].filter(Boolean).join(' / ');
+    console.error('[checkout] failed response:', res);
+    alert('チェックアウトの作成に失敗しました\n' + (detail || '(詳細不明)') + '\n\nお手数ですがこのメッセージをサポートまでお知らせください。');
   } catch(e) {
-    alert('エラーが発生しました');
+    console.error('[checkout] exception:', e);
+    alert('チェックアウトでエラーが発生しました\n' + (e?.message || e));
   }
 }
 
