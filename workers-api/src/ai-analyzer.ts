@@ -104,7 +104,7 @@ roadmap_3day は Day1/2/3 で deployable な状態に到達する具体的タス
 
 // Anthropic API の一時的エラー (429 / 5xx / network) を指数バックオフで retry。
 // 4xx (validation) は即 throw、retry しても直らない。
-async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): Promise<T> {
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): Promise<T> {
   let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -147,9 +147,11 @@ export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): 
   // Phase 2 RAG: 同カテゴリの直近 published SaaS 実績を system prompt に注入
   const similarCasesPrompt = await fetchSimilarCasesPrompt(env, brief);
 
+  // Haiku 4.5: 5-10s で完走、Cloudflare Workers の waitUntil 30s 制限内に確実収まる
+  // Sonnet 4.6 (30-60s) では waitUntil タイムアウトで analyzer が打ち切られていた
   const message = await withRetry('messages.create', () => client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 2048,
     system: SYSTEM_PROMPT + similarCasesPrompt,
     messages: [
       {
