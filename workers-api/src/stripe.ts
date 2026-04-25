@@ -308,7 +308,7 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
           };
           if (periodStart) row.current_period_start = periodStart;
           if (periodEnd) row.current_period_end = periodEnd;
-          await s.from('saas_subscriptions').upsert(row, { onConflict: 'saas_subscriptions_app_id_user_id_key' });
+          await s.from('saas_subscriptions').upsert(row, { onConflict: 'app_id,user_id' });
         }
       } else {
         // Legacy SaaS project subscriptions
@@ -456,7 +456,7 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
         const subId = typeof sess.subscription === 'string' ? sess.subscription : '';
         const custId = typeof sess.customer === 'string' ? sess.customer : '';
         if (appId && userId && subId) {
-          await s.from('saas_subscriptions').upsert(
+          const { error: upErr } = await s.from('saas_subscriptions').upsert(
             {
               user_id: userId,
               app_id: appId,
@@ -465,8 +465,12 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
               stripe_customer_id: custId,
               status: 'active',
             },
-            { onConflict: 'saas_subscriptions_app_id_user_id_key' },
+            { onConflict: 'app_id,user_id' },
           );
+          if (upErr) console.error('[checkout.session.completed] saas_subscriptions upsert failed:', upErr.message, { appId, userId, subId });
+          else console.log('[checkout.session.completed] saas_subscriptions ok:', { appId, userId, plan: planName });
+        } else {
+          console.warn('[checkout.session.completed] missing field:', { appId, userId, subId });
         }
       }
       break;
