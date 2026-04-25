@@ -460,8 +460,39 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
     return c.json({ error: `このプロジェクトはプレビュー段階ではありません (status=${project.status})` }, 400);
   }
 
-  // saas_projects.status を published に、saas_apps.is_published を true に
   const admin = sbAdmin(c.env);
+
+  // ★ マルチテナント (is_official=false) は Stripe Connect onboarding 必須。
+  // owner の company.stripe_charges_enabled が true でないと公開させない。
+  // (公式 SaaS = Puente 自社運営 = Connect 不要)
+  const { data: appCheck } = await admin
+    .from('saas_apps')
+    .select('is_official,owner_id')
+    .eq('slug', project.slug)
+    .single();
+  if (appCheck && appCheck.is_official !== true) {
+    const ownerId = appCheck.owner_id;
+    if (!ownerId) {
+      return c.json({ error: 'owner_id missing on saas_apps. データ不整合。', code: 'no_owner' }, 500);
+    }
+    const { data: ownerCompany } = await admin
+      .from('companies')
+      .select('id,stripe_connect_account_id,stripe_charges_enabled')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!ownerCompany?.stripe_connect_account_id || !ownerCompany?.stripe_charges_enabled) {
+      return c.json({
+        error: 'Stripe 連携（収益受け取り設定）が未完了のため、公開できません。ダッシュボードから Stripe Connect の設定を完了してください。',
+        code: 'connect_not_ready',
+        onboarding_required: true,
+        company_id: ownerCompany?.id ?? null,
+      }, 400);
+    }
+  }
+
+  // saas_projects.status を published に、saas_apps.is_published を true に
   const { error: pUpdErr } = await admin.from('saas_projects').update({ status: 'published' }).eq('id', id);
   if (pUpdErr) return c.json({ error: 'project update failed: ' + pUpdErr.message }, 500);
 
@@ -1187,12 +1218,39 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
 
   try {
     // Get app info (admin で RLS bypass — 誰でも published app は見える前提)
+    // ★ is_official + owner_id を取得してマルチテナント／公式の分岐に使う
     const { data: appData, error: appErr } = await sbAdmin(c.env)
       .from('saas_apps')
-      .select('id,slug,name,emoji,stripe_product_id')
+      .select('id,slug,name,emoji,stripe_product_id,is_official,owner_id')
       .eq('slug', slug)
       .single();
     if (appErr || !appData) return c.json({ error: 'app not found: ' + (appErr?.message || slug) }, 404);
+
+    // ★ マルチテナント (is_official=false) は Stripe Connect Destination Charges 必須
+    //   - owner の company から stripe_connect_account_id を取得
+    //   - charges_enabled=true でなければ 400 で reject
+    //   - 公式 (is_official=true) は Puente 自社運営 = Connect 不要
+    const isOfficial = appData.is_official === true;
+    let connectAccountId: string | null = null;
+    if (!isOfficial) {
+      if (!appData.owner_id) {
+        return c.json({ error: 'owner_id missing on saas_apps. データ不整合。', code: 'no_owner' }, 500);
+      }
+      const { data: ownerCompany } = await sbAdmin(c.env)
+        .from('companies')
+        .select('id,stripe_connect_account_id,stripe_charges_enabled')
+        .eq('owner_id', appData.owner_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!ownerCompany?.stripe_connect_account_id || !ownerCompany?.stripe_charges_enabled) {
+        return c.json({
+          error: 'このアプリのオーナーが収益受け取り設定 (Stripe Connect) を完了していないため、課金を受け付けられません。オーナーに連絡してください。',
+          code: 'connect_not_ready',
+        }, 400);
+      }
+      connectAccountId = ownerCompany.stripe_connect_account_id;
+    }
 
     // Get user's Supabase auth email via admin (requires service role key)
     let customerEmail = '';
@@ -1222,7 +1280,7 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
     if (!productId) {
       const product = await stripe.products.create({
         name: `${appData.emoji || ''} ${appData.name} — Punete Micro SaaS`.trim(),
-        metadata: { app_id: appData.id, slug: appData.slug },
+        metadata: { app_id: appData.id, slug: appData.slug, is_official: String(isOfficial) },
       });
       productId = product.id;
       const { error: upErr } = await sbAdmin(c.env)
@@ -1257,7 +1315,24 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
     // Determine origin for success/cancel URLs
     const origin = c.req.header('origin') || `https://${slug}.puente-saas.com`;
 
-    // Create Checkout Session (no Connect split for official Puente apps — 100% Puente revenue)
+    // Build subscription_data — マルチテナントは Connect Destination Charges
+    const subscriptionData: any = {
+      metadata: {
+        app_id: appData.id,
+        app_slug: appData.slug,
+        plan_name: planKey,
+        user_id: uid,
+        kind: 'app_subscription',
+        is_official: String(isOfficial),
+      },
+    };
+    if (!isOfficial && connectAccountId) {
+      // ★ 70/30 自動分配: application_fee_percent=70 で Puente 取り分、残り 30% は Connect 経由でユーザーへ
+      subscriptionData.application_fee_percent = 70;
+      subscriptionData.transfer_data = { destination: connectAccountId };
+    }
+
+    // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
@@ -1265,25 +1340,22 @@ app.post('/api/apps/:slug/checkout', auth, async (c) => {
       allow_promotion_codes: true,
       success_url: `${origin}?checkout=success`,
       cancel_url: `${origin}?checkout=cancel`,
-      subscription_data: {
-        metadata: {
-          app_id: appData.id,
-          app_slug: appData.slug,
-          plan_name: planKey,
-          user_id: uid,
-          kind: 'app_subscription',
-        },
-      },
+      subscription_data: subscriptionData,
       metadata: {
         app_id: appData.id,
         app_slug: appData.slug,
         plan_name: planKey,
         user_id: uid,
         kind: 'app_subscription',
+        is_official: String(isOfficial),
       },
     });
 
-    return c.json({ url: session.url, session_id: session.id });
+    return c.json({
+      url: session.url,
+      session_id: session.id,
+      revenue_share: isOfficial ? 'puente_only' : '70_puente_30_owner',
+    });
   } catch (e: any) {
     // Stripe / DB の実エラー内容をフロントに返す（decode して原因切り分け容易に）
     const msg = e?.message || 'unknown error';
