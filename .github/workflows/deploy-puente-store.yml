@@ -45,9 +45,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: "1406a3260412719d49e409e5d735dfdd"
         # --branch=main にすることで production ドメイン（puente-saas.com 等）に反映される
         # --commit-hash で Cloudflare ダッシュボード上にも commit SHA が紐づく
+        # commit-message は 1 行目のみ・ASCII 安全側に sanitize（Cloudflare API
+        # が鉤括弧・em dash・改行・全角記号を含むメッセージを弾く [code: 8000111]）
         run: |
+          RAW_MSG=$(git log -1 --pretty=%s "${{ github.sha }}" 2>/dev/null || echo "manual dispatch")
+          SAFE_MSG=$(echo "$RAW_MSG" | head -c 200 | tr -d '\n\r' | sed 's/[「」『』！!？?]//g')
           npx -y wrangler@latest pages deploy preview \
             --project-name=puente-store \
             --branch=main \
             --commit-hash=${{ github.sha }} \
-            --commit-message="${{ github.event.head_commit.message || 'manual dispatch' }}"
+            --commit-message="$SAFE_MSG"
