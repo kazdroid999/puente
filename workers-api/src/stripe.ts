@@ -339,30 +339,89 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
     }
     case 'charge.succeeded': {
       // 売上分配イベントを記録
+      // - 旧方式: charge.metadata.saas_id → saas_projects.id を直接参照
+      // - 新方式 (/api/apps/:slug/checkout 経由): subscription.metadata.app_id → saas_apps
+      //   → saas_apps.idea_id (=saas_projects.id) と company_id を引いて記録
+      // 公式アプリ (is_official=true) は Connect なし、application_fee=0 で全額 Puente 計上
       const charge = event.data.object as Stripe.Charge;
-      const saasId = (charge.metadata?.saas_id) || (charge.transfer_data ? null : null);
-      const amount = charge.amount; // JPY
-      const appFee = typeof charge.application_fee_amount === 'number' ? charge.application_fee_amount : Math.round(amount * PUENTE_SHARE);
-      const userRev = amount - appFee;
-      if (saasId) {
-        const { data: saas } = await s.from('saas_projects').select('company_id').eq('id', saasId).single();
-        if (saas) {
-          await s.from('revenue_events').upsert(
-            {
-              saas_id: saasId,
-              company_id: saas.company_id,
-              stripe_payment_intent_id: typeof charge.payment_intent === 'string' ? charge.payment_intent : null,
-              stripe_charge_id: charge.id,
-              gross_amount_jpy: amount,
-              puente_revenue_jpy: appFee,
-              user_revenue_jpy: userRev,
-              application_fee_jpy: appFee,
-              stripe_fee_jpy: charge.balance_transaction ? null : null,
-              occurred_at: new Date(charge.created * 1000).toISOString(),
-            },
-            { onConflict: 'stripe_payment_intent_id' },
-          );
+      const amount = charge.amount;
+      const appFee = typeof charge.application_fee_amount === 'number' ? charge.application_fee_amount : 0;
+      const userRev = appFee > 0 ? amount - appFee : 0;
+      const puenteRev = appFee > 0 ? appFee : amount; // Connect 無し時は Puente 全額
+
+      let saasId: string | null = (charge.metadata?.saas_id as string) || null;
+      let companyId: string | null = null;
+
+      // 新方式: invoice → subscription → metadata.app_id を引く
+      if (!saasId && charge.invoice) {
+        try {
+          const stripeApi = stripeClient(env);
+          const invoiceId = typeof charge.invoice === 'string' ? charge.invoice : charge.invoice.id;
+          const inv = await stripeApi.invoices.retrieve(invoiceId, { expand: ['subscription'] });
+          const sub = (inv as any).subscription as Stripe.Subscription | null;
+          const appId = (sub?.metadata as any)?.app_id || null;
+          if (appId) {
+            const { data: app } = await s
+              .from('saas_apps')
+              .select('id,idea_id,owner_id,is_official')
+              .eq('id', appId)
+              .maybeSingle();
+            if (app) {
+              saasId = app.idea_id || app.id;
+              if (app.idea_id) {
+                const { data: project } = await s
+                  .from('saas_projects')
+                  .select('company_id')
+                  .eq('id', app.idea_id)
+                  .maybeSingle();
+                if (project?.company_id) companyId = project.company_id;
+              } else if (app.owner_id) {
+                const { data: comp } = await s
+                  .from('companies')
+                  .select('id')
+                  .eq('owner_id', app.owner_id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (comp?.id) companyId = comp.id;
+              }
+            }
+          }
+        } catch (e: any) {
+          console.error('[charge.succeeded] subscription lookup failed:', e?.message ?? e);
         }
+      }
+
+      // 旧 saas_id 経路 (legacy /public/saas/:id/checkout) でも company_id を埋める
+      if (saasId && !companyId) {
+        const { data: project } = await s
+          .from('saas_projects')
+          .select('company_id')
+          .eq('id', saasId)
+          .maybeSingle();
+        if (project?.company_id) companyId = project.company_id;
+      }
+
+      if (saasId) {
+        const { error: revErr } = await s.from('revenue_events').upsert(
+          {
+            saas_id: saasId,
+            company_id: companyId,
+            stripe_payment_intent_id: typeof charge.payment_intent === 'string' ? charge.payment_intent : null,
+            stripe_charge_id: charge.id,
+            gross_amount_jpy: amount,
+            puente_revenue_jpy: puenteRev,
+            user_revenue_jpy: userRev,
+            application_fee_jpy: appFee,
+            stripe_fee_jpy: null,
+            occurred_at: new Date(charge.created * 1000).toISOString(),
+          },
+          { onConflict: 'stripe_payment_intent_id' },
+        );
+        if (revErr) console.error('[charge.succeeded] revenue_events upsert failed:', revErr.message);
+        else console.log(`[charge.succeeded] revenue_events: saas=${saasId} gross=${amount} puente=${puenteRev} user=${userRev}`);
+      } else {
+        console.warn('[charge.succeeded] could not determine saas_id for charge', charge.id);
       }
       break;
     }
