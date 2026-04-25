@@ -65,7 +65,7 @@ app.use('/public/*', cors({
     if (origin && /^https:\/\/[a-z0-9-]+\.puente-saas\.com$/.test(origin)) return origin;
     return '';
   },
-  allowHeaders: ['content-type'],
+  allowHeaders: ['content-type', 'authorization'],
   allowMethods: ['POST', 'OPTIONS'],
 }));
 
