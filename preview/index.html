@@ -91,7 +91,7 @@
       "mainEntity": [
         {"@type": "Question", "name": "Puente Micro SaaS Store とは何ですか？", "acceptedAnswer": {"@type": "Answer", "text": "アイデアを投稿するだけで、AI が事業計画と技術スタックを設計し、完全自動で1営業日以内にSaaSをローンチするサービスです。エンジニアの作業を介さず AI とインフラ自動化（Cloudflare Pages + Supabase + Stripe）だけで動きます。月額課金売上は Stripe Connect により Puente 70% / オーナー 30% に自動分配されます。"}},
         {"@type": "Question", "name": "費用はいくらですか？", "acceptedAnswer": {"@type": "Answer", "text": "初期費用 ¥330,000（税込、Founder 80% OFF クーポン適用で ¥66,000）。月額固定費は無料。エンドユーザーからの月額課金売上の 70% を Puente が運営費として、30% をオーナーが受け取ります。"}},
-        {"@type": "Question", "name": "リリースまでどれくらいかかりますか？", "acceptedAnswer": {"@type": "Answer", "text": "アイデア投稿後、AI が即座に解析・スコアリングし、85点以上で完全自動開発が即時スタート。最短数十分（即日）、最大でも 1 営業日以内に preview リンクが発行され、オーナーがダッシュボードで OK ボタンを押せば即時公開できます。"}},
+        {"@type": "Question", "name": "リリースまでどれくらいかかりますか？", "acceptedAnswer": {"@type": "Answer", "text": "アイデア投稿後、AI が即座に解析・スコアリングし、合格ライン以上で完全自動開発が即時スタート。最短数十分（即日）、最大でも 1 営業日以内に preview リンクが発行され、オーナーがダッシュボードで OK ボタンを押せば即時公開できます。"}},
         {"@type": "Question", "name": "売上はどう受け取りますか？", "acceptedAnswer": {"@type": "Answer", "text": "Stripe Connect Standard アカウントを onboarding で作成し、エンドユーザーの月額課金から 30% が Stripe Connect 経由で直接オーナーの口座に自動振込されます。"}},
         {"@type": "Question", "name": "技術スコープは？", "acceptedAnswer": {"@type": "Answer", "text": "Web ベースの SaaS、AI（テキスト/画像生成）、CRUD、Stripe 課金が対象。ネイティブモバイルアプリ、ハードウェア、ブロックチェーン、大規模 ML、ビデオ通話、スクレイピングはスコープ外です。"}}
       ]
@@ -608,8 +608,8 @@ button, a.btn, .cta { min-height: 40px }
       <p class="section-sub">企画投稿から公開まで、最短数十分。最大でも 1 営業日以内</p>
       <div class="process">
         <div class="step"><div class="num">STEP 01</div><h4>企画投稿</h4><p>ダッシュボードで概要・対象ユーザー・欲しい機能を入力。</p></div>
-        <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計・スコアリング</h4><p>AIが事業計画・BEP・技術スタックを自動ドラフト。3 軸スコアリング（実現性・収益性・技術難易度）で総合スコア算出。</p></div>
-        <div class="step"><div class="num">STEP 03</div><h4>85 点以上 → 完全自動開発</h4><p>総合スコア 85 点以上で自動開発スタート。AI が画面・データベース・課金まで全部組み立てます。エンジニアの手作業はゼロ。</p></div>
+        <div class="step"><div class="num">STEP 02</div><h4>AI 解析・設計・スコアリング</h4><p>AIが事業計画・BEP・技術スタックを自動ドラフト。Puente 独自スコアリングで合否判定。</p></div>
+        <div class="step"><div class="num">STEP 03</div><h4>合格ライン超え → 完全自動開発</h4><p>独自スコアの合格ラインを超えると自動開発スタート。AI が画面・データベース・課金まで全部組み立てます。エンジニアの手作業はゼロ。</p></div>
         <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認 → 公開</h4><p>完成したサイトの確認用リンクをダッシュボードでお知らせ。あなたが OK で公開ボタンを押すだけ。</p></div>
         <div class="step"><div class="num">STEP 05</div><h4>プロモーション</h4><p>PR Times 配信・Wix ブログ・公式 SNS 紹介投稿はプエンテ広報チームが代行。オーナーも各カードのシェアボタンから自身の SNS にワンクリック投稿できます。</p></div>
       </div>
@@ -707,7 +707,7 @@ button, a.btn, .cta { min-height: 40px }
         </details>
         <details class="faq-item">
           <summary>企画投稿からローンチまでの期間は？</summary>
-          <p>最短即日（数十分）、最大でも 1 営業日以内にローンチします。企画投稿後、AI が即座に解析・スコアリングし、85 点以上で完全自動開発が走ります。preview リンクをダッシュボードでお知らせ、あなたが OK で公開ボタンを押すだけ。</p>
+          <p>最短即日（数十分）、最大でも 1 営業日以内にローンチします。企画投稿後、AI が即座に解析・スコアリングし、合格ライン超えで完全自動開発が走ります。preview リンクをダッシュボードでお知らせ、あなたが OK で公開ボタンを押すだけ。</p>
         </details>
         <details class="faq-item">
           <summary>プロモーションはどうなりますか？</summary>
@@ -1505,7 +1505,7 @@ function renderProjectDetail(idx) {
         <div class="ai-card" style="text-align:center">
           <p style="margin-bottom:14px;font-size:15px">まだAI分析が開始されていません。</p>
           <button class="btn btn-primary" onclick="startAnalysis('${p.id}')" style="padding:12px 28px;font-size:15px;font-weight:700">🤖 AI 分析を開始する</button>
-          <p style="margin-top:10px;font-size:12px;color:var(--sub)">通常 1〜2 分で 3 軸スコアと事業計画ドラフトが出ます</p>
+          <p style="margin-top:10px;font-size:12px;color:var(--sub)">通常 1〜2 分でスコアと事業計画ドラフトが出ます</p>
         </div>`;
     } else {
       el.innerHTML = '<div class="ai-card"><p>AI分析データがありません。</p></div>';
@@ -1541,8 +1541,8 @@ function renderProjectDetail(idx) {
       ${scoring.feasibility?.reason ? '<p style="margin-top:8px"><strong>実現可能性:</strong> ' + escHtml(scoring.feasibility.reason) + '</p>' : ''}
       ${scoring.profitability?.reason ? '<p><strong>収益性:</strong> ' + escHtml(scoring.profitability.reason) + '</p>' : ''}
       ${plan.decision === 'rejected' && plan.rejection_reason ? '<div style="background:#FFEBEE;padding:14px;border-radius:8px;margin-top:12px"><strong style="color:#C62828">却下理由:</strong> ' + escHtml(plan.rejection_reason) + '</div>' : ''}
-      ${plan.decision === 'auto_dev' ? '<div style="background:#E8F5E9;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #1B5E20"><strong style="color:#1B5E20">🚀 自動開発トリガー発動</strong><p style="margin-top:4px">スコア85点以上＆技術スコープOK — 自動開発キューに追加されました。</p></div>' : ''}
-      ${plan.decision === 'needs_improvement' && plan.improvement_suggestions ? '<div style="background:#FFF8E1;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #F57F17"><strong style="color:#F57F17">💡 改善提案（85点以上で自動開発）</strong><ul style="margin-top:8px">' + plan.improvement_suggestions.map(s => '<li>' + escHtml(s) + '</li>').join('') + '</ul><p style="margin-top:8px;font-size:13px">改善して再投稿すると、スコアが向上し自動開発の対象になります。</p></div>' : ''}
+      ${plan.decision === 'auto_dev' ? '<div style="background:#E8F5E9;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #1B5E20"><strong style="color:#1B5E20">🚀 自動開発トリガー発動</strong><p style="margin-top:4px">合格ライン超え＆技術スコープOK — 自動開発キューに追加されました。</p></div>' : ''}
+      ${plan.decision === 'needs_improvement' && plan.improvement_suggestions ? '<div style="background:#FFF8E1;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #F57F17"><strong style="color:#F57F17">💡 改善提案（合格ライン超えで自動開発）</strong><ul style="margin-top:8px">' + plan.improvement_suggestions.map(s => '<li>' + escHtml(s) + '</li>').join('') + '</ul><p style="margin-top:8px;font-size:13px">改善して再投稿すると、スコアが向上し自動開発の対象になります。</p></div>' : ''}
       ${plan.scope_check && !plan.scope_check.scope_ok ? '<div style="background:#FFF3E0;padding:14px;border-radius:8px;margin-top:12px;border-left:4px solid #E65100"><strong style="color:#E65100">⚠️ 技術スコープ外の機能あり</strong><ul style="margin-top:8px">' + (plan.scope_check.out_of_scope_features||[]).map(f => '<li style="color:#BF360C">' + escHtml(f) + '</li>').join('') + '</ul>' + ((plan.scope_check.alternatives||[]).length ? '<p style="margin-top:8px"><strong>代替案:</strong></p><ul>' + plan.scope_check.alternatives.map(a => '<li style="color:#00695C">' + escHtml(a) + '</li>').join('') + '</ul>' : '') + '</div>' : ''}
     </div>
     <!-- エグゼクティブサマリー -->
@@ -1610,7 +1610,7 @@ function renderProjectDetail(idx) {
     ${p.status === 'auto_dev' || p.status === 'approved' || p.status === 'published' ? '<div class="ai-card"><h4>SNS プロモーション</h4><p>✅ 承認済み — PR Times / Wix Blog / X / Instagram / YouTube Short のプロモーションキューに自動登録されました。</p></div>' : ''}
     ${p.status === 'needs_improvement' || p.status === 'rejected' ? `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
       <h4>📝 修正して再投稿</h4>
-      <p style="margin-bottom:12px">改善提案を参考に企画を修正してください。総合スコア85点以上で自動開発が開始されます。</p>
+      <p style="margin-bottom:12px">改善提案を参考に企画を修正してください。スコアが合格ラインを超えると自動開発が開始されます。</p>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div>
           <label style="font-size:12px;color:var(--sub)">サービス名</label>
@@ -1751,7 +1751,7 @@ async function resubmitProject(projectId, idx) {
 
 // ---- draft → AI 分析を開始（直接 INSERT された draft や、UI で詰まった draft の救出にも使用可）----
 async function startAnalysis(projectId) {
-  if (!confirm('これからマリアが分析しますね 🌸\n\n事業計画・BEP（採算ライン）・技術スタックをドラフトして、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n85 点超えたらそのまま自動で SaaS が立ち上がります ☕️\n\nちょっとお時間ください（1〜2 分）。始めて大丈夫ですか？')) return;
+  if (!confirm('これからマリアが分析しますね 🌸\n\n事業計画・採算ライン・技術スタックをまとめて、\n合格ラインを超えたらそのまま自動で SaaS が立ち上がります ☕️\n\nちょっとお時間ください（1〜2 分）。始めて大丈夫ですか？')) return;
 
   // 該当カードのボタンを即無効化＋ローディング表示（多重クリック防止）
   const btns = document.querySelectorAll(`button[onclick="startAnalysis('${projectId}')"]`);
@@ -1842,7 +1842,7 @@ async function loadAdminProjects() {
         '<td>' + new Date(p.created_at).toLocaleDateString('ja-JP') + '</td>' +
         '<td><select onchange="adminChangeStatus(\'' + p.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">' +
           '<option value="">操作...</option>' +
-          // 通常は AI 自動解析 → 85点以上で auto_dev 自動遷移 → preview 自動到達 → オーナーが公開ボタンで published
+          // 通常は AI 自動解析 → 合格ライン超えで auto_dev 自動遷移 → preview 自動到達 → オーナーが公開ボタンで published
           // 以下は例外時の手動オーバーライドのみに絞る
           '<option value="auto_dev">🚀 自動開発を強制実行</option>' +
           '<option value="rejected">❌ 却下</option>' +
@@ -2309,7 +2309,7 @@ const LEGAL = {
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">販売価格</td><td style="padding:12px 0">【Micro SaaS オーナー向け】初期費用: 330,000円（税込）/ 月額費用: 無料 / 売上レベニューシェア: プエンテ70% オーナー30%<br>【エンドユーザー向けサブスク】無料（月3回）/ ベーシック 月額980円（月30回）/ スタンダード 月額1,980円（月100回）/ プレミアム 月額2,980円（無制限）※すべて税込</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">支払方法</td><td style="padding:12px 0">クレジットカード（Stripe決済）</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">支払時期</td><td style="padding:12px 0">初期費用: サービス申込時 / エンドユーザーサブスク: 毎月自動課金 / レベニューシェア: 月次集計、翌月末振込</td></tr>
-<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">サービス提供時期</td><td style="padding:12px 0">初期費用お支払い確認後、最短即日〜1営業日以内にサービスローンチ（AI 解析・自動開発のため、85 点以上で即時開発開始）/ エンドユーザーサブスク: お支払い完了後即時利用可能</td></tr>
+<tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">サービス提供時期</td><td style="padding:12px 0">初期費用お支払い確認後、最短即日〜1営業日以内にサービスローンチ（AI 解析・自動開発のため、合格ライン超えで即時開発開始）/ エンドユーザーサブスク: お支払い完了後即時利用可能</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">解約・ダウングレード</td><td style="padding:12px 0">エンドユーザーサブスクはいつでも解約・ダウングレード可能。変更は次の請求期間から適用されます。日割り返金はありません。</td></tr>
 <tr style="border-bottom:1px solid #E5E5E0"><td style="padding:12px 0;font-weight:600">返品・キャンセル</td><td style="padding:12px 0">デジタルサービスの性質上、サービス提供開始後の返金は原則不可。Micro SaaSローンチ前のキャンセルは全額返金。</td></tr>
 <tr><td style="padding:12px 0;font-weight:600">動作環境</td><td style="padding:12px 0">最新のChrome, Safari, Firefox, Edge対応。スマートフォン・PC対応。</td></tr>
