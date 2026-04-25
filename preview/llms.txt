@@ -11,11 +11,12 @@ Puente Micro SaaS Store は、SaaS のアイデアを持つ起業家・新規事
 - **代表**: 保科 一男（Kazuo Hoshina）
 - **所在地**: 〒359-1106 埼玉県所沢市東狭山ヶ丘2-2951-44 アートベースA-202
 
-## How it works (3 ステップ)
+## How it works (4 ステップ)
 
 1. **アイデア投稿**: ダッシュボードで企画概要・欲しい機能・ターゲットユーザーを入力
-2. **AI 解析**: Claude が事業計画・BEP（損益分岐点）・技術スタック・3日ロードマップ・3軸スコアリング（feasibility / profitability / technical_difficulty）を自動生成。85 点以上で自動開発トリガー
-3. **3 営業日以内にローンチ**: AI 完全自動で Cloudflare Pages + Supabase + Stripe Connect の上に実装し、サブドメイン (`{slug}.puente-saas.com`) で公開。エンジニアの手作業介入なし
+2. **AI 解析・スコアリング**: Claude が事業計画・BEP（損益分岐点）・技術スタック・3日ロードマップ・3軸スコアリング（feasibility / profitability / technical_difficulty）を自動生成
+3. **85 点以上 → 完全自動開発**: 総合スコア 85 点以上 + 技術スコープ OK で自動開発トリガー発動。AI とインフラ自動化（Cloudflare Pages + Supabase + Stripe Connect）だけで実装。エンジニアや Puente 側の承認は介在しない
+4. **オーナーが preview 確認 → 公開**: 3 営業日以内に preview リンクが発行され、サブドメイン (`{slug}.puente-saas.com`) でアクセス可能。オーナー（投稿者）が確認して公開ボタンを押せば一般公開
 
 ## Pricing
 
