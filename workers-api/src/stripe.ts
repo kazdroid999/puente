@@ -265,6 +265,18 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
 
+      // ★ Stripe API 2025-04-30.basil 以降:
+      //   subscription.current_period_start / end はトップレベルから削除され
+      //   subscription.items.data[0].current_period_start / end に移動。
+      //   undefined を Date に渡すと "Invalid time value" で webhook 全部落ちる。
+      const item0: any = sub.items?.data?.[0];
+      const tsStart: number | null =
+        (sub as any).current_period_start ?? item0?.current_period_start ?? null;
+      const tsEnd: number | null =
+        (sub as any).current_period_end ?? item0?.current_period_end ?? null;
+      const periodStart = typeof tsStart === 'number' ? new Date(tsStart * 1000).toISOString() : null;
+      const periodEnd = typeof tsEnd === 'number' ? new Date(tsEnd * 1000).toISOString() : null;
+
       // Handle Micro SaaS App subscriptions (kind=app_subscription)
       if (sub.metadata.kind === 'app_subscription') {
         const appId = sub.metadata.app_id;
@@ -286,38 +298,34 @@ export async function handleWebhook(env: Env, req: Request): Promise<Response> {
         }
 
         if (appId && userId) {
-          await s.from('saas_subscriptions').upsert(
-            {
-              user_id: userId,
-              app_id: appId,
-              plan: planName,
-              stripe_subscription_id: sub.id,
-              stripe_customer_id: customerId,
-              status: dbStatus,
-              current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-              current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-            },
-            { onConflict: 'saas_subscriptions_app_id_user_id_key' },
-          );
+          const row: Record<string, any> = {
+            user_id: userId,
+            app_id: appId,
+            plan: planName,
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: customerId,
+            status: dbStatus,
+          };
+          if (periodStart) row.current_period_start = periodStart;
+          if (periodEnd) row.current_period_end = periodEnd;
+          await s.from('saas_subscriptions').upsert(row, { onConflict: 'saas_subscriptions_app_id_user_id_key' });
         }
       } else {
         // Legacy SaaS project subscriptions
         const saasId = sub.metadata.saas_id;
         const planName = sub.metadata.plan_name;
-        await s.from('subscriptions').upsert(
-          {
-            saas_id: saasId,
-            end_user_email: (sub as any).customer_email ?? '',
-            stripe_customer_id: customerId,
-            stripe_subscription_id: sub.id,
-            plan_name: planName,
-            status: sub.status,
-            current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-            canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
-          },
-          { onConflict: 'stripe_subscription_id' },
-        );
+        const row: Record<string, any> = {
+          saas_id: saasId,
+          end_user_email: (sub as any).customer_email ?? '',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: sub.id,
+          plan_name: planName,
+          status: sub.status,
+          canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+        };
+        if (periodStart) row.current_period_start = periodStart;
+        if (periodEnd) row.current_period_end = periodEnd;
+        await s.from('subscriptions').upsert(row, { onConflict: 'stripe_subscription_id' });
       }
       break;
     }
