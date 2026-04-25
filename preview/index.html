@@ -114,10 +114,49 @@ header{position:sticky;top:0;background:rgba(250,250,247,.85);backdrop-filter:bl
 .nav .cta{background:var(--ink);color:#fff;padding:9px 18px;border-radius:999px;font-weight:600;cursor:pointer}
 .nav .cta:hover{background:var(--accent)}
 .hero{padding:96px 0 80px;position:relative;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}
+.hero .hero-content{min-width:0}
 .hero h1{font-family:'Zen Kaku Gothic New';font-weight:900;font-size:clamp(40px,7vw,76px);line-height:1.05;letter-spacing:-.03em;margin-bottom:24px}
 .hero h1 .accent{color:var(--accent)}
 .hero p.lead{font-size:20px;color:var(--sub);max-width:680px;margin-bottom:40px}
 .hero .ctas{display:flex;gap:16px;flex-wrap:wrap}
+/* マリア (mascot) — Hero right column */
+.hero-mascot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hero-mascot img{width:240px;height:240px;display:block;image-rendering:pixelated;-ms-interpolation-mode:nearest-neighbor;border-radius:18px;background:#FFE4ED;box-shadow:0 8px 24px rgba(61,44,36,0.10)}
+.hero-mascot .balloon{position:relative;margin-top:16px;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;color:var(--ink);max-width:240px;text-align:center;line-height:1.4}
+.hero-mascot .balloon::before{content:"";position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:10px solid var(--ink)}
+.hero-mascot .balloon::after{content:"";position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #fff}
+.hero-mascot .name-tag{margin-top:8px;font-size:11px;color:var(--sub);font-weight:600;letter-spacing:0.05em}
+@media(max-width:840px){.hero .wrap{grid-template-columns:1fr;gap:32px}.hero-mascot{order:-1}.hero-mascot img{width:180px;height:180px}}
+
+/* Meet マリア section */
+.meet-maria{padding:80px 0;background:linear-gradient(180deg,#FFE4ED 0%,#FAFAF7 100%);position:relative;overflow:hidden}
+.meet-maria::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:160px;height:6px;background:var(--accent);border-radius:0 0 12px 12px}
+.meet-maria .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:48px;align-items:center}
+.meet-maria .maria-portrait{display:flex;flex-direction:column;align-items:center}
+.meet-maria .maria-portrait img{width:240px;height:auto;image-rendering:pixelated;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgba(61,44,36,0.14);border:3px solid #fff}
+.meet-maria .maria-portrait .role-tag{margin-top:16px;background:var(--accent);color:#fff;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:0.04em}
+.meet-maria .maria-bio h2{font-family:'Zen Kaku Gothic New';font-size:32px;font-weight:900;letter-spacing:-0.02em;margin-bottom:8px;color:var(--ink)}
+.meet-maria .maria-bio h2 .romaji{font-family:Arial,sans-serif;font-size:18px;color:var(--sub);font-weight:700;margin-left:8px}
+.meet-maria .maria-bio .age-badge{display:inline-block;background:#fff;color:var(--accent);padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;border:2px solid var(--accent);margin-bottom:20px}
+.meet-maria .maria-bio p{font-size:15px;line-height:1.85;color:var(--ink);margin-bottom:14px}
+.meet-maria .maria-bio p strong{color:var(--accent);font-weight:700}
+.meet-maria .maria-bio .quote{margin-top:20px;background:#fff;border-left:4px solid var(--accent);padding:16px 20px;border-radius:8px;font-size:14px;font-style:italic;color:var(--ink);box-shadow:0 4px 12px rgba(61,44,36,0.05)}
+.meet-maria .maria-bio .cafe-link{display:inline-block;margin-top:4px;color:var(--accent);text-decoration:underline;font-weight:600}
+@media(max-width:840px){.meet-maria .wrap{grid-template-columns:1fr;gap:24px;text-align:center}.meet-maria .maria-bio{text-align:left}.meet-maria .maria-portrait img{width:200px}}
+
+/* Dashboard avatar (C) */
+.maria-dash-avatar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:2px solid var(--line);border-radius:999px;margin-bottom:16px;width:fit-content;box-shadow:0 2px 8px rgba(61,44,36,0.06)}
+.maria-dash-avatar img{width:40px;height:40px;border-radius:50%;image-rendering:pixelated;background:#FFE4ED}
+.maria-dash-avatar .greet{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+.maria-dash-avatar .greet small{display:block;font-size:11px;color:var(--sub);font-weight:500;margin-top:2px}
+
+/* AI analyzing loading w/ Maria (D) */
+.ai-card .maria-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0}
+.ai-card .maria-loading img{width:88px;height:88px;image-rendering:pixelated;background:#FFE4ED;border-radius:14px;animation:maria-bounce 1.4s ease-in-out infinite}
+@keyframes maria-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.ai-card .maria-loading .ai-msg{font-size:15px;font-weight:700;color:var(--ink);text-align:center}
+.ai-card .maria-loading .ai-msg small{display:block;font-size:12px;color:var(--sub);font-weight:500;margin-top:4px}
 .btn{padding:14px 28px;border-radius:999px;font-weight:600;text-decoration:none;font-size:15px;display:inline-flex;align-items:center;gap:8px;transition:transform .15s;cursor:pointer;border:none}
 .btn:hover{transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
@@ -450,17 +489,24 @@ button, a.btn, .cta { min-height: 40px }
 <main id="main-content">
   <section class="hero">
     <div class="wrap">
-      <h1>アイデアを<br><span class="accent">1日</span>でSaaSに。</h1>
-      <p class="lead">アイディアはあるけど、自分でSaaSを作れない方へ。AIが解析・設計し、Puenteが開発・運用。あなたはアイデアを書くだけで、Micro SaaS のオーナーに。</p>
-      <div class="ctas">
-        <button class="btn btn-primary" onclick="handleCTA()">企画を投稿する →</button>
-        <a href="#apps" class="btn btn-ghost">公開中のSaaSを見る</a>
+      <div class="hero-content">
+        <h1>アイデアを<br><span class="accent">1日</span>でSaaSに。</h1>
+        <p class="lead">アイディアはあるけど、自分でSaaSを作れない方へ。AIが解析・設計し、Puenteが開発・運用。あなたはアイデアを書くだけで、Micro SaaS のオーナーに。</p>
+        <div class="ctas">
+          <button class="btn btn-primary" onclick="handleCTA()">企画を投稿する →</button>
+          <a href="#apps" class="btn btn-ghost">公開中のSaaSを見る</a>
+        </div>
+        <div class="kpi">
+          <div class="item"><div class="num">1<span>日</span></div><div class="lbl">アイデア → ローンチ</div></div>
+          <div class="item"><div class="num">¥330,000</div><div class="lbl">初期設定費用（先着 80% OFF）</div></div>
+          <div class="item"><div class="num">¥0</div><div class="lbl">月額プラットフォーム費</div></div>
+          <div class="item"><div class="num"><span>30</span>%</div><div class="lbl">ユーザー側 売上シェア</div></div>
+        </div>
       </div>
-      <div class="kpi">
-        <div class="item"><div class="num">1<span>日</span></div><div class="lbl">アイデア → ローンチ</div></div>
-        <div class="item"><div class="num">¥330,000</div><div class="lbl">初期設定費用（先着 80% OFF）</div></div>
-        <div class="item"><div class="num">¥0</div><div class="lbl">月額プラットフォーム費</div></div>
-        <div class="item"><div class="num"><span>30</span>%</div><div class="lbl">ユーザー側 売上シェア</div></div>
+      <div class="hero-mascot">
+        <img src="/assets/maria/maria-pose1-placeholder.svg" alt="Puente AI 担当 黒戸マリア">
+        <div class="balloon">私が 1 日で SaaS にします！</div>
+        <div class="name-tag">Puente AI 担当 ／ 黒戸 マリア</div>
       </div>
     </div>
   </section>
@@ -547,6 +593,24 @@ button, a.btn, .cta { min-height: 40px }
         <div class="step"><div class="num">STEP 03</div><h4>85 点以上 → 完全自動開発</h4><p>総合スコア 85 点以上で自動開発スタート。AI が画面・データベース・課金まで全部組み立てます。エンジニアの手作業はゼロ。</p></div>
         <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認 → 公開</h4><p>完成したサイトの確認用リンクをダッシュボードでお知らせ。あなたが OK で公開ボタンを押すだけ。</p></div>
         <div class="step"><div class="num">STEP 05</div><h4>プロモーション</h4><p>PR Times 配信・Wix ブログ・公式 SNS 紹介投稿はプエンテ広報チームが代行。オーナーも各カードのシェアボタンから自身の SNS にワンクリック投稿できます。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B. Meet マリア専用セクション -->
+  <section id="meet-maria" class="meet-maria">
+    <div class="wrap">
+      <div class="maria-portrait">
+        <img src="/assets/maria/maria-pose2-placeholder.svg" alt="黒戸マリア — Puente AI プロデューサー">
+        <div class="role-tag">Puente AI プロデューサー</div>
+      </div>
+      <div class="maria-bio">
+        <h2>黒戸 マリア<span class="romaji">Kuroto Maria</span></h2>
+        <div class="age-badge">24 歳・新卒 2 年目・社員番号 #001</div>
+        <p>東京の某私大を <strong>飛び級＆主席で卒業</strong>（情報工学・AI 専攻）。新卒で Puente 入社、2 年目にして「あの子に任せれば SaaS が <strong>1 日で立ち上がる</strong>」と社内で囁かれる AI 担当のスーパー新人。</p>
+        <p>担当業務は、あなたが投稿したアイデアを Puente Micro SaaS Store のインフラに <strong>1 日で実装〜公開、PR まで自動配信する</strong>こと。事業計画・BEP・技術スタックの設計から、Stripe Connect 連携・preview URL 発行まで、全部マリアが回します。</p>
+        <p>休日の趣味はカフェ巡り。最近のお気に入りは高円寺の絵本カフェ <a class="cafe-link" href="https://www.hattifnatt.jp/" target="_blank" rel="noopener">HATTIFNATT -高円寺のおうち-</a>。小人サイズの入口、壁一面の手描きイラスト、ドールハウスみたいな内装を見ては「うちも、こんなふうに <strong>小さくて かわいくて、毎日のお仕事がちょっと楽しくなる SaaS</strong> を 1 日で建てたい」と毎週末通ってる。</p>
+        <div class="quote">「あなたのアイデア、マリアが 1 日で SaaS にします。気軽に投げてくださいね 🌸」</div>
       </div>
     </div>
   </section>
@@ -725,6 +789,11 @@ button, a.btn, .cta { min-height: 40px }
       <div>
         <h2 class="section-title">マイページ</h2>
         <p class="section-sub" id="dash-welcome">ようこそ</p>
+        <!-- C. マリアアバター（ログイン後にずっと隣にいる） -->
+        <div class="maria-dash-avatar">
+          <img src="/assets/maria/maria-avatar-placeholder.svg" alt="黒戸マリア">
+          <div class="greet">マリアが SaaS 立ち上げを担当します<small>困ったらいつでも声かけてくださいね 🌸</small></div>
+        </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="showAuth('idea')">新しい企画を投稿</button>
@@ -1399,7 +1468,14 @@ function renderProjectDetail(idx) {
   const plan = p.ai_plan;
   if (!plan) {
     if (p.status === 'ai_analyzing') {
-      el.innerHTML = '<div class="ai-card"><p style="text-align:center;font-size:16px">⏳ AI が企画を分析中です…（通常1〜2分）</p><p style="text-align:center;margin-top:8px"><button class="btn btn-ghost" onclick="loadDashboard()" style="padding:8px 16px;font-size:13px">更新</button></p></div>';
+      el.innerHTML = `
+        <div class="ai-card">
+          <div class="maria-loading">
+            <img src="/assets/maria/maria-pose1-placeholder.svg" alt="黒戸マリア 解析中">
+            <div class="ai-msg">⏳ マリアが企画を分析中です…☕️<small>事業計画・BEP・スコアリング中（通常 1〜2 分）</small></div>
+            <button class="btn btn-ghost" onclick="loadDashboard()" style="padding:8px 16px;font-size:13px">更新する</button>
+          </div>
+        </div>`;
     } else if (p.status === 'draft') {
       el.innerHTML = `
         <div class="ai-card" style="text-align:center">

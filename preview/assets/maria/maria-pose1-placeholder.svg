@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" shape-rendering="crispEdges">
+  <!-- Pixel-art-style placeholder for Maria Pose 1 (Hero) -->
+  <!-- DALL-E generated PNG should replace this file (same path, .png OR keep .svg) -->
+  <rect width="240" height="240" fill="#FAFAF7"/>
+
+  <!-- Hair back -->
+  <rect x="64" y="56" width="112" height="80" fill="#3D2C24"/>
+
+  <!-- Face -->
+  <rect x="80" y="80" width="80" height="72" fill="#FCE7D6"/>
+
+  <!-- Hair top fringe -->
+  <rect x="72" y="56" width="96" height="32" fill="#5A3F32"/>
+
+  <!-- Eyes -->
+  <rect x="96" y="104" width="12" height="14" fill="#FF5A1F"/>
+  <rect x="132" y="104" width="12" height="14" fill="#FF5A1F"/>
+  <rect x="100" y="108" width="4" height="6" fill="#FFF"/>
+  <rect x="136" y="108" width="4" height="6" fill="#FFF"/>
+
+  <!-- Smile -->
+  <rect x="108" y="132" width="24" height="4" fill="#3D2C24"/>
+  <rect x="104" y="128" width="4" height="4" fill="#3D2C24"/>
+  <rect x="132" y="128" width="4" height="4" fill="#3D2C24"/>
+
+  <!-- Cheek blush -->
+  <rect x="88" y="124" width="8" height="6" fill="#FFB5A0" opacity="0.6"/>
+  <rect x="144" y="124" width="8" height="6" fill="#FFB5A0" opacity="0.6"/>
+
+  <!-- Body / Blouse (white) -->
+  <rect x="72" y="152" width="96" height="64" fill="#FFFFFF"/>
+  <rect x="72" y="152" width="96" height="4" fill="#E5E5E0"/>
+
+  <!-- Orange ribbon -->
+  <rect x="108" y="152" width="24" height="10" fill="#FF5A1F"/>
+  <rect x="116" y="148" width="8" height="6" fill="#FF5A1F"/>
+
+  <!-- Laptop in arms -->
+  <rect x="80" y="172" width="80" height="36" fill="#3D2C24"/>
+  <rect x="84" y="176" width="72" height="28" fill="#FAFAF7"/>
+  <!-- "P" sticker -->
+  <rect x="112" y="184" width="16" height="16" fill="#FF5A1F"/>
+  <text x="120" y="197" font-family="Arial Black" font-size="14" font-weight="900" fill="#3D2C24" text-anchor="middle">P</text>
+
+  <!-- Caption (placeholder note) -->
+  <text x="120" y="232" font-family="monospace" font-size="9" fill="#6E5C50" text-anchor="middle">[マリア・仮置き — DALL-E 画像と差し替え予定]</text>
+</svg>

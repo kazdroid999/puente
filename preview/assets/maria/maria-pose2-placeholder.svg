@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" shape-rendering="crispEdges">
+  <!-- Pose 2 (Meet section): Maria with latte cup, winking -->
+  <rect width="240" height="320" fill="#FAFAF7"/>
+
+  <!-- Tiny dollhouse background -->
+  <rect x="40" y="180" width="160" height="120" fill="#FFE4ED"/>
+  <polygon points="40,180 120,140 200,180" fill="#FF5A1F"/>
+  <rect x="100" y="220" width="40" height="60" fill="#3D2C24"/>
+  <circle cx="118" cy="250" r="2" fill="#FF5A1F"/>
+
+  <!-- Hair back -->
+  <rect x="64" y="40" width="112" height="80" fill="#3D2C24"/>
+
+  <!-- Face -->
+  <rect x="80" y="64" width="80" height="72" fill="#FCE7D6"/>
+
+  <!-- Hair top fringe -->
+  <rect x="72" y="40" width="96" height="32" fill="#5A3F32"/>
+
+  <!-- Eyes (one wink) -->
+  <rect x="96" y="88" width="12" height="14" fill="#FF5A1F"/>
+  <rect x="100" y="92" width="4" height="6" fill="#FFF"/>
+  <rect x="132" y="96" width="12" height="2" fill="#3D2C24"/>
+
+  <!-- Smile -->
+  <rect x="108" y="116" width="24" height="4" fill="#3D2C24"/>
+  <rect x="104" y="112" width="4" height="4" fill="#3D2C24"/>
+  <rect x="132" y="112" width="4" height="4" fill="#3D2C24"/>
+
+  <!-- Cheek -->
+  <rect x="88" y="108" width="8" height="6" fill="#FFB5A0" opacity="0.6"/>
+  <rect x="144" y="108" width="8" height="6" fill="#FFB5A0" opacity="0.6"/>
+
+  <!-- Body / Blouse -->
+  <rect x="72" y="136" width="96" height="48" fill="#FFFFFF"/>
+  <rect x="108" y="136" width="24" height="10" fill="#FF5A1F"/>
+
+  <!-- Skirt (pink A-line) -->
+  <polygon points="64,184 176,184 192,260 48,260" fill="#FFC0CB"/>
+
+  <!-- Loafers -->
+  <rect x="92" y="260" width="20" height="10" fill="#5A3F32"/>
+  <rect x="128" y="260" width="20" height="10" fill="#5A3F32"/>
+
+  <!-- Latte cup (right hand) -->
+  <rect x="160" y="160" width="24" height="32" fill="#FCE7D6"/>
+  <rect x="160" y="156" width="24" height="6" fill="#F5DEB3"/>
+  <rect x="184" y="172" width="6" height="12" fill="#FCE7D6"/>
+
+  <text x="120" y="312" font-family="monospace" font-size="9" fill="#6E5C50" text-anchor="middle">[マリア・仮置き — DALL-E 画像と差し替え予定]</text>
+</svg>

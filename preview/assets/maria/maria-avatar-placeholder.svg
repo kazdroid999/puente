@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Pose 3: Bust-up avatar for dashboard -->
+  <rect width="64" height="64" rx="32" fill="#FAFAF7"/>
+
+  <!-- Hair back -->
+  <rect x="14" y="14" width="36" height="36" fill="#3D2C24"/>
+
+  <!-- Face -->
+  <rect x="20" y="22" width="24" height="24" fill="#FCE7D6"/>
+
+  <!-- Hair fringe -->
+  <rect x="18" y="14" width="28" height="10" fill="#5A3F32"/>
+
+  <!-- Eyes -->
+  <rect x="24" y="30" width="4" height="5" fill="#FF5A1F"/>
+  <rect x="36" y="30" width="4" height="5" fill="#FF5A1F"/>
+
+  <!-- Smile -->
+  <rect x="28" y="40" width="8" height="2" fill="#3D2C24"/>
+
+  <!-- Blouse -->
+  <rect x="14" y="50" width="36" height="14" fill="#FFFFFF"/>
+  <rect x="28" y="50" width="8" height="4" fill="#FF5A1F"/>
+</svg>
