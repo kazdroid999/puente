@@ -1074,7 +1074,14 @@ async function loadDashboard() {
 
   // Founder 80% OFF クーポン表示（初期費用未決済の法人に紐づいた未消費クーポンを優先表示）
   loadFounderCoupon().catch(e => console.error('Failed to load founder coupon', e));
-  loadConnectStatus().catch(e => console.error('Failed to load connect status', e));
+  // /dashboard/connect/return から戻ってきた場合は Stripe API でポーリング、
+  // そうでなければ通常の loadConnectStatus
+  handleConnectReturnPath().then((handled) => {
+    if (!handled) loadConnectStatus().catch(e => console.error('Failed to load connect status', e));
+  }).catch(e => {
+    console.error('connect-return handler failed:', e);
+    loadConnectStatus().catch(() => {});
+  });
 
   // Load projects via Workers API
   const result = await apiCall('/api/saas');
@@ -1632,6 +1639,85 @@ async function startConnectOnboarding() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Stripe で連携を開始する →'; }
   }
+}
+
+// /dashboard/connect/return 着地時: Stripe API から状態を pull してポーリング
+async function handleConnectReturnPath() {
+  const path = window.location.pathname || '';
+  if (!path.startsWith('/dashboard/connect/')) return false;
+  if (!currentUser) return false;
+
+  const card = document.getElementById('connect-card');
+  if (card) {
+    card.style.display = 'block';
+    card.style.borderColor = '#3B82F6';
+    card.style.background = '#EFF6FF';
+    const badge = document.getElementById('connect-badge');
+    const title = document.getElementById('connect-title');
+    const desc = document.getElementById('connect-desc');
+    if (badge) { badge.style.color = '#3B82F6'; badge.textContent = '⏳ 連携状態を確認中…'; }
+    if (title) title.textContent = 'Stripe からの情報を取得しています';
+    if (desc) desc.textContent = '通常 5〜30 秒かかります。完了するとここに反映されます。';
+    document.getElementById('btn-connect-onboard').style.display = 'none';
+    document.getElementById('btn-connect-refresh').style.display = 'none';
+  }
+
+  // company を取得
+  const { data: companies } = await _sb
+    .from('companies')
+    .select('id')
+    .eq('owner_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (!companies || companies.length === 0) {
+    window.history.replaceState({}, '', '/');
+    return true;
+  }
+  const companyId = companies[0].id;
+
+  if (path.startsWith('/dashboard/connect/refresh')) {
+    // onboarding 中断 → 再開
+    window.history.replaceState({}, '', '/');
+    await loadConnectStatus();
+    if (confirm('Stripe Connect の設定が中断されました。もう一度設定を続行しますか？')) {
+      await startConnectOnboarding();
+    }
+    return true;
+  }
+
+  // /dashboard/connect/return: Stripe API から状態を取得してポーリング
+  let attempts = 0;
+  const maxAttempts = 8;
+  const interval = 3000;
+  const tick = async () => {
+    attempts++;
+    try {
+      const res = await apiCall('/api/companies/' + companyId + '/connect/refresh', 'POST');
+      if (res?.charges_enabled === true && res?.payouts_enabled === true) {
+        // 完了
+        window.history.replaceState({}, '', '/');
+        await loadConnectStatus();
+        return;
+      }
+      if (res?.status === 'restricted') {
+        // 追加情報必要
+        window.history.replaceState({}, '', '/');
+        await loadConnectStatus();
+        return;
+      }
+    } catch (e) {
+      console.error('[connect/return] refresh failed:', e);
+    }
+    if (attempts < maxAttempts) {
+      setTimeout(tick, interval);
+    } else {
+      // タイムアウト
+      window.history.replaceState({}, '', '/');
+      await loadConnectStatus();
+    }
+  };
+  tick();
+  return true;
 }
 
 // オーナー公開停止

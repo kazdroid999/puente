@@ -17,26 +17,106 @@ export function stripeClient(env: Env): Stripe {
 }
 
 // ========== Connect Onboarding ==========
+// 既に企業の Connect アカウントがある場合は再利用、無ければ新規作成。
+// Stripe 側にだけ作られて DB に紐付かない孤児アカウントは、metadata.company_id を
+// 頼りに account.list で復元してリカバリする。
 export async function createConnectAccount(env: Env, companyId: string, email: string) {
   const stripe = stripeClient(env);
-  const account = await stripe.accounts.create({
-    type: 'standard',
-    country: 'JP',
-    email,
-    metadata: { company_id: companyId },
-  });
-  await sb(env)
-    .from('companies')
-    .update({ stripe_connect_account_id: account.id, stripe_connect_status: 'onboarding' })
-    .eq('id', companyId);
+  const admin = sbAdmin(env);
 
+  // 1. companies.stripe_connect_account_id が既にあるならそれを使う
+  const { data: company } = await admin
+    .from('companies')
+    .select('stripe_connect_account_id')
+    .eq('id', companyId)
+    .single();
+  let accountId = company?.stripe_connect_account_id || null;
+
+  // 2. DB に無いなら Stripe API で metadata.company_id 検索 → 既存アカウントを発見できれば再利用
+  if (!accountId) {
+    try {
+      const list = await stripe.accounts.list({ limit: 100 });
+      const found = list.data.find((a) => a.metadata?.company_id === companyId);
+      if (found) {
+        accountId = found.id;
+        await admin
+          .from('companies')
+          .update({
+            stripe_connect_account_id: accountId,
+            stripe_connect_status: found.charges_enabled ? 'active' : 'onboarding',
+            stripe_charges_enabled: !!found.charges_enabled,
+            stripe_payouts_enabled: !!found.payouts_enabled,
+          })
+          .eq('id', companyId);
+        console.log(`[Connect] reused orphan account ${accountId} for company ${companyId}`);
+      }
+    } catch (e) {
+      console.warn('[Connect] account list lookup failed (non-fatal):', e);
+    }
+  }
+
+  // 3. それでも無ければ新規作成
+  if (!accountId) {
+    const account = await stripe.accounts.create({
+      type: 'standard',
+      country: 'JP',
+      email,
+      metadata: { company_id: companyId },
+    });
+    accountId = account.id;
+    // ★ admin (service_role) で update — sb(env) だと user JWT で RLS にブロックされて null のまま残る
+    const { error: upErr } = await admin
+      .from('companies')
+      .update({ stripe_connect_account_id: accountId, stripe_connect_status: 'onboarding' })
+      .eq('id', companyId);
+    if (upErr) console.error('[Connect] companies update failed:', upErr.message);
+  }
+
+  // 4. Account Link を発行 → ユーザー onboarding 用 URL
   const link = await stripe.accountLinks.create({
-    account: account.id,
+    account: accountId,
     refresh_url: `${env.APP_ORIGIN}/dashboard/connect/refresh`,
     return_url: `${env.APP_ORIGIN}/dashboard/connect/return`,
     type: 'account_onboarding',
   });
-  return { account_id: account.id, onboarding_url: link.url };
+  return { account_id: accountId, onboarding_url: link.url };
+}
+
+// ========== Connect 状態 同期 (return_url 着地時 / 手動 refresh 用) ==========
+// Webhook account.updated に頼らず Stripe API から最新状態を直接 pull して
+// companies テーブルへ即時反映する。onboarding 完了直後の UX 改善用。
+export async function refreshConnectStatus(env: Env, companyId: string) {
+  const admin = sbAdmin(env);
+  const { data: company } = await admin
+    .from('companies')
+    .select('stripe_connect_account_id')
+    .eq('id', companyId)
+    .single();
+  if (!company?.stripe_connect_account_id) {
+    return { error: 'not_connected' as const, status: 404 as const };
+  }
+  const stripe = stripeClient(env);
+  const acct = await stripe.accounts.retrieve(company.stripe_connect_account_id);
+  const newStatus = acct.charges_enabled
+    ? 'active'
+    : acct.details_submitted
+      ? 'restricted'
+      : 'onboarding';
+  await admin
+    .from('companies')
+    .update({
+      stripe_charges_enabled: !!acct.charges_enabled,
+      stripe_payouts_enabled: !!acct.payouts_enabled,
+      stripe_connect_status: newStatus,
+    })
+    .eq('id', companyId);
+  return {
+    charges_enabled: !!acct.charges_enabled,
+    payouts_enabled: !!acct.payouts_enabled,
+    details_submitted: !!acct.details_submitted,
+    status: newStatus,
+    requirements: (acct.requirements?.currently_due || []).slice(0, 10),
+  };
 }
 
 // ========== Product / Price 作成 (SaaS 公開時) ==========

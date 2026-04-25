@@ -9,6 +9,7 @@ import type { Env } from './types';
 import { sb, sbAdmin, sbUser, getUserId, isSuperAdmin } from './supabase';
 import {
   createConnectAccount,
+  refreshConnectStatus,
   createPlanPrices,
   createCheckoutSession,
   createInitialFeeCheckout,
@@ -227,16 +228,39 @@ app.patch('/api/companies/:id/invoice', auth, async (c) => {
 app.post('/api/companies/:id/connect', auth, async (c) => {
   const uid = c.get('userId');
   const id = c.req.param('id');
-  const { data: company } = await sbu(c)
+  // owner 確認は admin client で（user JWT の sb() が落ちる場合に対する保険）
+  const { data: company } = await sbAdmin(c.env)
     .from('companies')
     .select('id,owner_id')
     .eq('id', id)
     .eq('owner_id', uid)
-    .single();
-  if (!company) return c.json({ error: 'not found' }, 404);
-  const { data: profile } = await sbu(c).from('profiles').select('email').eq('id', uid).single();
+    .maybeSingle();
+  if (!company) return c.json({ error: 'not found or not owner' }, 404);
+  const { data: profile } = await sbAdmin(c.env).from('profiles').select('email').eq('id', uid).maybeSingle();
   const result = await createConnectAccount(c.env, id, profile?.email ?? '');
   return c.json(result);
+});
+
+// Stripe Connect 状態を Stripe API から直接 pull して companies へ即時反映。
+// /dashboard/connect/return 着地時にフロントから叩く想定。Webhook 遅延の影響を受けない。
+app.post('/api/companies/:id/connect/refresh', auth, async (c) => {
+  const uid = c.get('userId');
+  const id = c.req.param('id');
+  const { data: company } = await sbAdmin(c.env)
+    .from('companies')
+    .select('id,owner_id')
+    .eq('id', id)
+    .eq('owner_id', uid)
+    .maybeSingle();
+  if (!company) return c.json({ error: 'not found or not owner' }, 404);
+  try {
+    const result = await refreshConnectStatus(c.env, id);
+    if ('error' in result) return c.json({ error: result.error }, result.status as 404);
+    return c.json(result);
+  } catch (e: any) {
+    console.error('[connect/refresh] failed:', e?.message ?? e);
+    return c.json({ error: e?.message || 'refresh failed' }, 500);
+  }
 });
 
 // ========== 初期費用 Checkout ==========
