@@ -1751,7 +1751,7 @@ async function resubmitProject(projectId, idx) {
 
 // ---- draft → AI 分析を開始（直接 INSERT された draft や、UI で詰まった draft の救出にも使用可）----
 async function startAnalysis(projectId) {
-  if (!confirm('AI 分析を開始します。\n\nPuente の AI 担当「黒戸」が事業計画・BEP・技術スタックをドラフトし、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n\n通常 1〜2 分かかります。よろしいですか？')) return;
+  if (!confirm('これからマリアが分析しますね 🌸\n\n事業計画・BEP（採算ライン）・技術スタックをドラフトして、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n85 点超えたらそのまま自動で SaaS が立ち上がります ☕️\n\nちょっとお時間ください（1〜2 分）。始めて大丈夫ですか？')) return;
 
   // 該当カードのボタンを即無効化＋ローディング表示（多重クリック防止）
   const btns = document.querySelectorAll(`button[onclick="startAnalysis('${projectId}')"]`);
@@ -1760,12 +1760,12 @@ async function startAnalysis(projectId) {
   const result = await apiCall('/api/saas/' + projectId + '/analyze', 'POST');
 
   if (result?.error) {
-    alert('AI 分析の開始に失敗しました: ' + result.error);
+    alert('うまく始められなかったみたい… ☕️\n\n' + result.error);
     btns.forEach(b => { b.disabled = false; b.textContent = '🤖 AI 分析を開始する'; b.style.opacity = '1'; });
     return;
   }
 
-  alert('✅ AI 分析を開始しました！\n通常 1〜2 分で結果が出ます。ダッシュボードを更新してください。');
+  alert('🌸 始めました！\nマリアが分析中です。1〜2 分後に「更新」ボタンで結果を見てくださいね ☕️');
   setTimeout(() => loadDashboard(), 2000);
 }
 
