@@ -301,6 +301,7 @@ app.post('/api/saas', auth, async (c) => {
   const uid = c.get('userId');
   const body = await c.req.json();
   const db = sbu(c);
+  const admin = sbAdmin(c.env);
 
   // company_id がない場合は自動作成（LP簡易フロー用）
   let companyId = body.company_id;
@@ -336,6 +337,24 @@ app.post('/api/saas', auth, async (c) => {
       .eq('id', companyId)
       .single();
     if (!company) return c.json({ error: 'company not found' }, 404);
+  }
+
+  // ★ Stripe Connect onboarding が完了していないと投稿不可。
+  //   マルチテナント設計の根幹: ユーザーがエンドユーザーから 30% 売上を受け取る
+  //   口座を持っていなければ、SaaS を投稿しても課金フローを動かせないため。
+  //   (memory: project_revenue_share.md で明示)
+  const { data: companyConnect } = await admin
+    .from('companies')
+    .select('id,stripe_connect_account_id,stripe_charges_enabled')
+    .eq('id', companyId)
+    .maybeSingle();
+  if (!companyConnect?.stripe_charges_enabled) {
+    return c.json({
+      error: 'SaaS を投稿する前に Stripe Connect 連携（収益受け取り設定）を完了してください。ダッシュボードの「Stripe Connect 連携」カードから設定できます。',
+      code: 'connect_required',
+      onboarding_required: true,
+      company_id: companyId,
+    }, 400);
   }
 
   const slug = (body.name || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) + '-' + Date.now().toString(36);

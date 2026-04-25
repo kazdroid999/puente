@@ -752,6 +752,12 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
     <div id="form-idea" style="display:none">
       <h2>企画を投稿</h2>
       <p class="modal-sub">AI が解析・設計し、3日でSaaS化します</p>
+      <!-- Stripe Connect 未連携時に表示する警告バナー (ideaConnectGate でセット) -->
+      <div id="idea-connect-warning" style="display:none;background:#FFF1F1;border:1.5px solid #DC3545;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#DC3545;margin-bottom:6px">⚠️ Stripe Connect 連携が必要です</div>
+        <div style="font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:8px">SaaS を投稿するには、エンドユーザーの月額課金から <strong>30% を受け取る</strong>収益受け取り口座（Stripe Connect）の設定が必要です。<br>※ 残り 70% は Puente の運営費として自動分配されます。</div>
+        <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="closeModal(); if(typeof showDashboard==='function') showDashboard(); setTimeout(() => { if(typeof startConnectOnboarding==='function') startConnectOnboarding(); }, 300);">Stripe で連携を開始する →</button>
+      </div>
       <div id="idea-msg" class="msg"></div>
       <div class="field">
         <label>サービス名</label>
@@ -963,6 +969,37 @@ function switchForm(name) {
     el.className = 'msg';
     el.textContent = '';
   });
+  // 企画投稿フォームを開いたら Connect 連携状態を事前チェックして警告バナー表示
+  if (name === 'idea') checkConnectBeforeIdeaSubmit().catch(() => {});
+}
+
+// 企画投稿前に Stripe Connect 連携状態をチェックして警告バナーの表示/非表示を切替。
+// 未連携の場合は #idea-connect-warning を表示、連携済みなら隠す。
+async function checkConnectBeforeIdeaSubmit() {
+  const warn = document.getElementById('idea-connect-warning');
+  if (!warn || !currentUser) return;
+  try {
+    const { data: companies } = await _sb
+      .from('companies')
+      .select('id,stripe_connect_account_id,stripe_charges_enabled')
+      .eq('owner_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (!companies || companies.length === 0) {
+      // 会社未登録 (初回投稿予定者) はバナー非表示。投稿時に backend で会社が
+      // 自動作成され、その時点で 400 + connect_required が返って onboarding 案内に流れる
+      warn.style.display = 'none';
+      return;
+    }
+    const c = companies[0];
+    if (c.stripe_charges_enabled === true) {
+      warn.style.display = 'none';
+    } else {
+      warn.style.display = 'block';
+    }
+  } catch (e) {
+    console.error('[idea-form] connect precheck failed:', e);
+  }
 }
 
 function handleCTA() {
@@ -1388,6 +1425,20 @@ async function submitIdea() {
     target_users: target,
     features: featuresRaw.split('\n').map(s => s.trim()).filter(Boolean),
   });
+
+  // ★ Stripe Connect 未連携 → onboarding 案内ダイアログ
+  if (result?.code === 'connect_required') {
+    showMsg(msg, 'error', result.error || 'Stripe Connect 連携が必要です');
+    if (confirm('SaaS を投稿するには Stripe Connect の収益受け取り設定が必要です。\n\n70% は Puente の運営費、30% はあなた（オーナー）の売上として自動分配されます。\n\n今すぐ Stripe Connect を設定しますか？')) {
+      closeModal();
+      // ダッシュボードを表示してから Connect onboarding を起動
+      if (typeof showDashboard === 'function') showDashboard();
+      setTimeout(() => {
+        if (typeof startConnectOnboarding === 'function') startConnectOnboarding();
+      }, 300);
+    }
+    return;
+  }
 
   if (result?.error) { showMsg(msg, 'error', result.error); return; }
 
