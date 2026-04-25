@@ -147,11 +147,12 @@ export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): 
   // Phase 2 RAG: 同カテゴリの直近 published SaaS 実績を system prompt に注入
   const similarCasesPrompt = await fetchSimilarCasesPrompt(env, brief);
 
-  // Haiku 4.5: 5-10s で完走、Cloudflare Workers の waitUntil 30s 制限内に確実収まる
+  // Haiku 4.5: 5-15s で完走、Cloudflare Workers の waitUntil 30s 制限内に確実収まる
   // Sonnet 4.6 (30-60s) では waitUntil タイムアウトで analyzer が打ち切られていた
+  // max_tokens は 4096 必要 (JSON スキーマが大きい、2048 では途中切れエラーになる)
   const message = await withRetry('messages.create', () => client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2048,
+    max_tokens: 4096,
     system: SYSTEM_PROMPT + similarCasesPrompt,
     messages: [
       {
