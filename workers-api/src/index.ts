@@ -20,6 +20,7 @@ import { issueInitialDiscount, reconcileAllFounderCoupons } from './coupons';
 import { collectDailyKpi } from './performance-collector';
 import { analyzeBrief } from './ai-analyzer';
 import { runPromoQueue } from './promo';
+import { chatWithMaria } from './maria-chat';
 
 const app = new Hono<{ Bindings: Env; Variables: { userId: string; authHeader: string } }>();
 
@@ -116,6 +117,36 @@ app.get('/api/screenshot', async (c) => {
 
 // ---------- Webhook (署名検証は stripe.ts 側) ----------
 app.post('/stripe/webhook', async (c) => handleWebhook(c.env, c.req.raw));
+
+// ---------- Maria AI Chat (auth optional - 匿名でも会話可能) ----------
+// POST /public/maria/chat
+//   body: { message: string, session_id?: string }
+//   header: Authorization: Bearer <jwt>  (任意。あればログインユーザー、なければ匿名)
+// 匿名 5 msg/24h/IP, ログイン 30 msg/24h/user
+app.post('/public/maria/chat', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const message = (body?.message ?? '').toString();
+  const sessionId = (body?.session_id ?? null) as string | null;
+
+  // 認証ヘッダがあればユーザー特定
+  let userId: string | null = null;
+  const authHeader = c.req.header('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const { data } = await sb(c.env).auth.getUser(token);
+      userId = data?.user?.id ?? null;
+    } catch {}
+  }
+
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || null;
+
+  const result = await chatWithMaria(c.env, { message, userId, sessionId, clientIp });
+  if ('error' in result) {
+    return c.json(result, result.code === 'rate_limit_exceeded' ? 429 : 400);
+  }
+  return c.json(result);
+});
 
 // ---------- Admin: force re-analyze (temporary, auth by Stripe secret) ----------
 app.post('/admin/reanalyze/:id', async (c) => {

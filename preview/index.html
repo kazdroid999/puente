@@ -2369,5 +2369,182 @@ document.querySelectorAll('.thumb img').forEach(img => {
   </div>
 </div>
 
+<!-- ========== 黒戸マリア AI チャット ========== -->
+<style>
+.maria-fab{position:fixed;bottom:20px;right:20px;z-index:9000;display:flex;align-items:center;gap:10px;padding:10px 16px 10px 10px;background:#fff;border:2px solid var(--accent);border-radius:999px;box-shadow:0 8px 24px rgba(61,44,36,0.18);cursor:pointer;transition:all .2s ease;font-family:inherit}
+.maria-fab:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(61,44,36,0.24)}
+.maria-fab img{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#FFE4ED;border:2px solid #fff}
+.maria-fab .fab-text{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+.maria-fab .fab-text small{display:block;font-size:11px;color:var(--sub);font-weight:500;margin-top:2px}
+.maria-fab .fab-pulse{position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:50%;animation:maria-fab-pulse 1.6s ease-in-out infinite}
+@keyframes maria-fab-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.6}}
+@media(max-width:480px){.maria-fab .fab-text{display:none}.maria-fab{padding:8px}}
+
+.maria-drawer-backdrop{position:fixed;inset:0;background:rgba(61,44,36,0.4);z-index:9100;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.maria-drawer-backdrop.open{opacity:1;pointer-events:auto}
+.maria-drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#FFFEFA;z-index:9200;display:flex;flex-direction:column;box-shadow:-12px 0 36px rgba(61,44,36,0.18);transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);font-family:inherit}
+.maria-drawer.open{transform:translateX(0)}
+@media(max-width:480px){.maria-drawer{width:100vw}}
+.maria-drawer header{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:16px 18px;background:linear-gradient(180deg,#FFE4ED 0%,#FFFEFA 100%);border-bottom:1px solid var(--line)}
+.maria-drawer header img{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#FFE4ED;border:2px solid #fff;box-shadow:0 4px 12px rgba(61,44,36,0.10)}
+.maria-drawer header .h-name{flex:1;line-height:1.3}
+.maria-drawer header .h-name strong{display:block;font-size:15px;color:var(--ink)}
+.maria-drawer header .h-name small{font-size:11px;color:var(--sub);font-weight:500}
+.maria-drawer header .h-close{background:transparent;border:none;font-size:22px;color:var(--sub);cursor:pointer;padding:4px 8px;line-height:1}
+.maria-drawer header .h-close:hover{color:var(--ink)}
+.maria-drawer .quota-bar{flex:0 0 auto;padding:6px 18px;background:#fff;border-bottom:1px solid var(--line);font-size:11px;color:var(--sub);text-align:right}
+.maria-drawer .msgs{flex:1 1 auto;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;background:#FFFEFA}
+.maria-drawer .msg{max-width:88%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap}
+.maria-drawer .msg.maria{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.maria-drawer .msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.maria-drawer .msg.error{align-self:flex-start;background:#FFF1F1;border:1px solid #FFCCCC;color:#DC3545}
+.maria-drawer .msg.typing{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--sub);font-style:italic}
+.maria-drawer .typing::after{content:"●●●";display:inline-block;animation:maria-typing 1.2s ease-in-out infinite}
+@keyframes maria-typing{0%,100%{opacity:.3}50%{opacity:1}}
+.maria-drawer .composer{flex:0 0 auto;display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.maria-drawer .composer textarea{flex:1;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;min-height:42px;max-height:120px;line-height:1.4;color:var(--ink)}
+.maria-drawer .composer textarea:focus{outline:none;border-color:var(--accent)}
+.maria-drawer .composer button{background:var(--accent);color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:18px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:transform .15s ease}
+.maria-drawer .composer button:hover{transform:scale(1.05)}
+.maria-drawer .composer button:disabled{background:var(--line);cursor:not-allowed;transform:none}
+</style>
+
+<button class="maria-fab" id="maria-fab" onclick="openMaria()" aria-label="マリアと話す">
+  <img src="/assets/maria/maria-avatar.png" alt="マリア">
+  <div class="fab-text">マリアに聞く<small>仕事も恋も SaaS のことも</small></div>
+  <span class="fab-pulse"></span>
+</button>
+
+<div class="maria-drawer-backdrop" id="maria-backdrop" onclick="closeMaria()"></div>
+
+<div class="maria-drawer" id="maria-drawer" role="dialog" aria-label="黒戸マリアとのチャット">
+  <header>
+    <img src="/assets/maria/maria-avatar.png" alt="黒戸マリア">
+    <div class="h-name">
+      <strong>黒戸 マリア</strong>
+      <small>Puente AI プロデューサー ／ 20歳 ☕️</small>
+    </div>
+    <button class="h-close" onclick="closeMaria()" aria-label="閉じる">✕</button>
+  </header>
+  <div class="quota-bar" id="maria-quota">　</div>
+  <div class="msgs" id="maria-msgs"></div>
+  <div class="composer">
+    <textarea id="maria-input" placeholder="マリアにメッセージを送る…（Enter で送信、Shift+Enter で改行）" rows="1"></textarea>
+    <button id="maria-send" onclick="sendMaria()" aria-label="送信">↑</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // セッション ID（匿名ユーザーの会話継続用、localStorage に保存）
+  let mariaSessionId = localStorage.getItem('maria_session_id');
+  if (!mariaSessionId) {
+    mariaSessionId = 'anon_' + Math.random().toString(36).substring(2,12) + Date.now().toString(36);
+    localStorage.setItem('maria_session_id', mariaSessionId);
+  }
+
+  let mariaOpened = false;
+
+  window.openMaria = function() {
+    document.getElementById('maria-drawer').classList.add('open');
+    document.getElementById('maria-backdrop').classList.add('open');
+    if (!mariaOpened) {
+      mariaOpened = true;
+      // 初回挨拶（ローカルメッセージ・APIコールなし）
+      renderMariaMsg('maria', 'こんにちは🌸 Puente の AI 担当、黒戸マリアです。\n\nSaaS のアイデア、お仕事の相談、雑談、なんでも気軽に話しかけてくださいね。\n\n…ちなみに、いま何かお困りごとありますか？ ☕️');
+    }
+    setTimeout(() => document.getElementById('maria-input').focus(), 300);
+  };
+
+  window.closeMaria = function() {
+    document.getElementById('maria-drawer').classList.remove('open');
+    document.getElementById('maria-backdrop').classList.remove('open');
+  };
+
+  function renderMariaMsg(role, text) {
+    const wrap = document.getElementById('maria-msgs');
+    const el = document.createElement('div');
+    el.className = 'msg ' + role;
+    el.textContent = text;
+    wrap.appendChild(el);
+    wrap.scrollTop = wrap.scrollHeight;
+    return el;
+  }
+
+  function setQuota(used, limit, isAnon) {
+    const q = document.getElementById('maria-quota');
+    if (!q) return;
+    if (isAnon) {
+      q.innerHTML = `今日のお話: ${used}/${limit}（ゲスト）　<a href="#" onclick="closeMaria();handleCTA();return false" style="color:var(--accent);font-weight:700">ログインで 30 回 /日に</a>`;
+    } else {
+      q.textContent = `今日のお話: ${used}/${limit}`;
+    }
+  }
+
+  window.sendMaria = async function() {
+    const input = document.getElementById('maria-input');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    const sendBtn = document.getElementById('maria-send');
+    sendBtn.disabled = true;
+    input.value = '';
+
+    renderMariaMsg('user', text);
+    const typing = renderMariaMsg('typing', 'マリアが考え中');
+
+    // 認証ヘッダ（ログイン時のみ）
+    let authHeader = {};
+    try {
+      if (typeof _sb !== 'undefined') {
+        const { data: { session } } = await _sb.auth.getSession();
+        if (session?.access_token) {
+          authHeader = { 'Authorization': 'Bearer ' + session.access_token };
+        }
+      }
+    } catch(e){}
+
+    try {
+      const res = await fetch(API_BASE + '/public/maria/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ message: text, session_id: mariaSessionId }),
+      });
+      const data = await res.json();
+      typing.remove();
+      if (data.error) {
+        renderMariaMsg('error', data.error);
+        if (typeof data.quotaUsed === 'number') setQuota(data.quotaUsed, data.quotaLimit, true);
+      } else {
+        renderMariaMsg('maria', data.reply);
+        setQuota(data.quotaUsed, data.quotaLimit, data.isAnonymous);
+      }
+    } catch (e) {
+      typing.remove();
+      renderMariaMsg('error', 'ネットワークが詰まっちゃったみたい… もう一度試してみてください ☕️');
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  };
+
+  // Enter で送信、Shift+Enter で改行
+  document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('maria-input');
+    if (!input) return;
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMaria();
+      }
+    });
+    // textarea 自動 resize
+    input.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(120, this.scrollHeight) + 'px';
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
