@@ -102,11 +102,36 @@ ${SCORING_RUBRIC}
 BEP は月次固定費・平均ARPU・損益分岐MRR・損益分岐ユーザー数を JPY で算出。
 roadmap_3day は Day1/2/3 で deployable な状態に到達する具体的タスク。`;
 
+// Anthropic API の一時的エラー (429 / 5xx / network) を指数バックオフで retry。
+// 4xx (validation) は即 throw、retry しても直らない。
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastErr = e;
+      const status: number | undefined = e?.status ?? e?.response?.status;
+      // 4xx は retry 不可（リクエスト側の問題）、ただし 408/429 だけは retry
+      if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+        throw e;
+      }
+      if (i === attempts - 1) break;
+      const delay = Math.min(1000 * Math.pow(2, i), 8000);
+      console.warn(`[AI Analyzer:${label}] retry ${i + 1}/${attempts} after ${delay}ms:`, e?.message ?? e);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): Promise<AiPlan> {
   console.log(`[AI Analyzer] Starting analysis for saas_id=${saasId}`);
 
   if (!env.ANTHROPIC_API_KEY) {
     console.error('[AI Analyzer] ANTHROPIC_API_KEY is not set!');
+    // 設定欠如は即 draft に戻す (詰まり防止)
+    try { await sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', saasId); } catch {}
     throw new Error('ANTHROPIC_API_KEY is not configured');
   }
 
@@ -115,10 +140,14 @@ export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): 
   await sbAdmin(env).from('saas_projects').update({ status: 'ai_analyzing' }).eq('id', saasId);
   console.log(`[AI Analyzer] Status updated to ai_analyzing for ${saasId}`);
 
+  // 以下、ai_analyzing で詰まらないように全体を try/catch で包む。
+  // どんな例外でも status='draft' に戻して再投稿できる状態に回復する。
+  let messageOuter: any;
+  try {
   // Phase 2 RAG: 同カテゴリの直近 published SaaS 実績を system prompt に注入
   const similarCasesPrompt = await fetchSimilarCasesPrompt(env, brief);
 
-  const message = await client.messages.create({
+  const message = await withRetry('messages.create', () => client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     system: SYSTEM_PROMPT + similarCasesPrompt,
@@ -163,7 +192,8 @@ ${JSON.stringify(brief, null, 2)}
 }`,
       },
     ],
-  });
+  }));
+  messageOuter = message;
 
   console.log(`[AI Analyzer] Claude API response received for ${saasId}, stop_reason=${message.stop_reason}`);
 
@@ -274,4 +304,16 @@ ${JSON.stringify(brief, null, 2)}
   }
 
   return plan;
+  } catch (err) {
+    // ai_analyzing で詰まらないように、すべての例外で status='draft' にロールバック。
+    // ユーザーは UI から再投稿可能になる。message-level の細かいエラーは内部 catch で
+    // すでに draft に戻している場合があるが、二重 update は冪等なので問題なし。
+    console.error(`[AI Analyzer] FATAL for ${saasId}, rolling back to draft:`, (err as Error)?.message ?? err);
+    try {
+      await sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', saasId);
+    } catch (rollbackErr) {
+      console.error(`[AI Analyzer] Rollback failed for ${saasId}:`, rollbackErr);
+    }
+    throw err;
+  }
 }
