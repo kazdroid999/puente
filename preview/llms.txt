@@ -1,6 +1,6 @@
 # Puente Micro SaaS Store
 
-> アイデアを投稿するだけで、AI が事業計画・BEP・技術スタックを設計し、**完全自動**で最短即日（数十分、最大 1 営業日以内）にSaaSをローンチする「Micro SaaS 立ち上げ運営サービス」。エンジニア作業ゼロ、AI とインフラ自動化（Cloudflare Pages + Supabase + Stripe Connect）だけで動く。Puente / オーナーともに人的承認は介在しない（85 点以上スコアで即時自動開発）。月額課金は Stripe Connect で Puente 70% / オーナー 30% に自動分配。運営：株式会社プエンテ（PUENTE Inc.）。ローンチ後の保守運用は Puente がボリビアチームと共同で担当。
+> アイデアを投稿するだけで、AI が事業計画・BEP・技術スタックを設計し、**完全自動**で最短即日（数十分、最大 1 営業日以内）にSaaSをローンチする「Micro SaaS 立ち上げ運営サービス」。エンジニア作業ゼロ、AI とインフラ自動化（Cloudflare Pages + Supabase + Stripe Connect）だけで動く。Puente / オーナーともに人的承認は介在しない（独自スコアの合格ライン超えで即時自動開発）。月額課金は Stripe Connect でオーナー 30% / Puente 70% に自動分配（Stripe Connect 振込スケジュールに準拠）。運営：株式会社プエンテ（PUENTE Inc.）。ローンチ後の保守運用は Puente がボリビアチームと共同で担当。
 
 ## What it is
 

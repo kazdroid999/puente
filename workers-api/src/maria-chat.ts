@@ -46,7 +46,7 @@ function buildMariaSystemPrompt(opts: {
 - 運営: 株式会社プエンテ（PUENTE Inc.、代表 保科一男）
 - 何ができる: SaaS のアイデアを投稿するだけで、AI が事業計画・BEP・技術スタックを設計し、最短 1 日で実装〜公開〜PR 配信まで完全自動
 - 料金: 初期費用 ¥330,000（税込・Founder 80% OFF クーポンで ¥66,000）、月額 0 円
-- 売上分配: Stripe Connect Destination Charges で Puente 70% / オーナー 30% 自動分配
+- 売上分配: Stripe Connect Destination Charges でオーナー 30% / Puente 70% 自動分配（Stripe Connect 振込スケジュールに準拠、標準は週次・月次設定も可能）
 - エンドユーザー課金プラン: 無料 / ¥980 / ¥1,980 / ¥2,980 月額（税込）
 - 対応スコープ: AI テキスト/画像生成、CRUD、Stripe 課金、静的 SEO、メール、簡易ダッシュボード
 - スコープ外: ネイティブモバイル / IoT / OAuth 外部 API 連携 / リアルタイム通信 / ブロックチェーン / 大規模 ML / ビデオ通話 / スクレイピング
