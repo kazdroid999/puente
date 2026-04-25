@@ -591,6 +591,21 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
       <div class="fc-note">1 社につき初回ローンチ時のみ有効。初期費用の Stripe Checkout でこのコードが自動適用されます。2 件目以降の企画は初期費用無料のためクーポン不要です。</div>
     </div>
 
+    <!-- Stripe Connect 連携カード (会社登録済み + 連携状態に応じて表示) -->
+    <div id="connect-card" style="display:none;border-radius:16px;padding:24px;margin-bottom:24px;border:2px solid;background:#fff">
+      <div style="display:flex;align-items:start;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div id="connect-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px"></div>
+          <div id="connect-title" style="font-family:'Zen Kaku Gothic New';font-weight:900;font-size:22px;letter-spacing:-.02em;margin-bottom:8px"></div>
+          <div id="connect-desc" style="font-size:14px;color:var(--sub);line-height:1.7;margin-bottom:12px"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+          <button id="btn-connect-onboard" class="btn btn-primary" style="display:none;padding:12px 24px;font-size:14px;font-weight:700" onclick="startConnectOnboarding()">Stripe で連携を完了する →</button>
+          <button id="btn-connect-refresh" class="btn btn-ghost" style="display:none;padding:8px 16px;font-size:12px" onclick="loadConnectStatus()">最新状態に更新</button>
+        </div>
+      </div>
+    </div>
+
     <div class="dash-cards">
       <div class="dash-card"><div class="dc-num" id="dc-ideas">0</div><div class="dc-label">投稿した企画</div></div>
       <div class="dash-card"><div class="dc-num" id="dc-apps">0</div><div class="dc-label">承認済み / 稼働中</div></div>
@@ -1059,6 +1074,7 @@ async function loadDashboard() {
 
   // Founder 80% OFF クーポン表示（初期費用未決済の法人に紐づいた未消費クーポンを優先表示）
   loadFounderCoupon().catch(e => console.error('Failed to load founder coupon', e));
+  loadConnectStatus().catch(e => console.error('Failed to load connect status', e));
 
   // Load projects via Workers API
   const result = await apiCall('/api/saas');
@@ -1513,8 +1529,108 @@ async function publishProject(projectId) {
   if (res?.ok) {
     alert('✅ 公開しました: ' + (res.public_url || ''));
     loadDashboard();
-  } else {
-    alert('公開に失敗しました: ' + (res?.error || 'unknown'));
+    return;
+  }
+  // Stripe Connect 未連携の場合は onboarding 案内
+  if (res?.code === 'connect_not_ready') {
+    if (confirm('収益受け取り設定（Stripe Connect）が未完了のため公開できません。\n\n今すぐ Stripe で連携設定を行いますか？')) {
+      await startConnectOnboarding();
+    }
+    return;
+  }
+  alert('公開に失敗しました: ' + (res?.error || 'unknown'));
+}
+
+// ---- Stripe Connect onboarding ----
+let _connectCompany = null; // 直近に取得した owner company レコードを保持
+
+async function loadConnectStatus() {
+  const card = document.getElementById('connect-card');
+  if (!card || !currentUser) return;
+  try {
+    const { data: companies, error } = await _sb
+      .from('companies')
+      .select('id,legal_name,stripe_connect_account_id,stripe_connect_status,stripe_charges_enabled,stripe_payouts_enabled')
+      .eq('owner_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error || !companies || companies.length === 0) {
+      // 会社未登録 → 連携カードは出さない（初期費用 Checkout 後に登録される想定）
+      card.style.display = 'none';
+      _connectCompany = null;
+      return;
+    }
+    const company = companies[0];
+    _connectCompany = company;
+
+    const badge = document.getElementById('connect-badge');
+    const title = document.getElementById('connect-title');
+    const desc = document.getElementById('connect-desc');
+    const btnOnboard = document.getElementById('btn-connect-onboard');
+    const btnRefresh = document.getElementById('btn-connect-refresh');
+
+    if (company.stripe_charges_enabled === true && company.stripe_payouts_enabled === true) {
+      // 完了
+      card.style.display = 'block';
+      card.style.borderColor = '#00B87A';
+      card.style.background = '#F0FBF6';
+      badge.style.color = '#00B87A';
+      badge.innerHTML = '✅ Stripe Connect 連携済み';
+      title.textContent = '収益受け取り設定 完了';
+      desc.innerHTML = `${escHtml(company.legal_name || '会社')} の Stripe Connect 連携が完了しています。エンドユーザーの月額課金売上は <strong>Puente 70% / オーナー 30%</strong> で自動分配されます。`;
+      btnOnboard.style.display = 'none';
+      btnRefresh.style.display = 'inline-flex';
+    } else if (company.stripe_connect_account_id) {
+      // onboarding 中 / restricted
+      card.style.display = 'block';
+      card.style.borderColor = '#E5A000';
+      card.style.background = '#FFF8E5';
+      badge.style.color = '#E5A000';
+      badge.innerHTML = '⏳ Stripe Connect 連携 — 追加情報が必要';
+      title.textContent = '連携設定が未完了です';
+      desc.innerHTML = `Stripe 側で本人確認・銀行口座などの追加情報が必要です。下のボタンから設定を続行してください。完了するまでこの SaaS は公開できません。`;
+      btnOnboard.textContent = 'Stripe で設定を続行する →';
+      btnOnboard.style.display = 'inline-flex';
+      btnRefresh.style.display = 'inline-flex';
+    } else {
+      // 未連携
+      card.style.display = 'block';
+      card.style.borderColor = '#DC3545';
+      card.style.background = '#FFF1F1';
+      badge.style.color = '#DC3545';
+      badge.innerHTML = '⚠️ 収益受け取り設定が必要';
+      title.textContent = 'Stripe Connect 連携が必要です';
+      desc.innerHTML = `エンドユーザーから月額課金を受け取るには、Stripe Connect 連携が必須です。<strong>連携完了までは SaaS を公開できません。</strong><br>連携後は売上が <strong>Puente 70% / オーナー 30%</strong> で自動分配されます。`;
+      btnOnboard.textContent = 'Stripe で連携を開始する →';
+      btnOnboard.style.display = 'inline-flex';
+      btnRefresh.style.display = 'none';
+    }
+  } catch(e) {
+    console.error('[connect] loadConnectStatus failed:', e);
+    card.style.display = 'none';
+  }
+}
+
+async function startConnectOnboarding() {
+  if (!_connectCompany) {
+    await loadConnectStatus();
+    if (!_connectCompany) {
+      alert('会社情報が見つかりません。先に企画投稿（初期費用決済）を行ってください。');
+      return;
+    }
+  }
+  const btn = document.getElementById('btn-connect-onboard');
+  if (btn) { btn.disabled = true; btn.textContent = '読み込み中...'; }
+  try {
+    const res = await apiCall('/api/companies/' + _connectCompany.id + '/connect', 'POST');
+    if (res?.onboarding_url) {
+      window.location.href = res.onboarding_url;
+    } else {
+      alert('Stripe Connect URL の取得に失敗しました: ' + (res?.error || 'unknown'));
+    }
+  } catch(e) {
+    alert('エラー: ' + (e?.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Stripe で連携を開始する →'; }
   }
 }
 
