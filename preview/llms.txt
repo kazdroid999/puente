@@ -1,0 +1,105 @@
+# Puente Micro SaaS Store
+
+> アイデアを投稿するだけで、AI が事業計画・BEP・技術スタックを設計し、ボリビア開発チームが3日以内にSaaSをローンチする「Micro SaaS 立ち上げ運営サービス」。月額課金は Stripe Connect で Puente 70% / オーナー 30% に自動分配。運営：株式会社プエンテ（PUENTE Inc.）。
+
+## What it is
+
+Puente Micro SaaS Store は、SaaS のアイデアを持つ起業家・新規事業担当者・個人事業主が、技術実装をせずに 3 日で実サービスを立ち上げ、レベニューシェア型で売上を受け取れるプラットフォームです。
+
+- **公式サイト**: https://puente-saas.com/
+- **運営会社**: 株式会社プエンテ（PUENTE Inc.）https://puentework.com
+- **代表**: 保科 一男（Kazuo Hoshina）
+- **所在地**: 〒359-1106 埼玉県所沢市東狭山ヶ丘2-2951-44 アートベースA-202
+
+## How it works (3 ステップ)
+
+1. **アイデア投稿**: ダッシュボードで企画概要・欲しい機能・ターゲットユーザーを入力
+2. **AI 解析**: Claude が事業計画・BEP（損益分岐点）・技術スタック・3日ロードマップ・3軸スコアリング（feasibility / profitability / technical_difficulty）を自動生成。85 点以上で自動開発トリガー
+3. **3 日でローンチ**: ボリビア開発チームが Cloudflare Pages + Supabase + Stripe で実装、サブドメイン (`{slug}.puente-saas.com`) で公開
+
+## Pricing
+
+- **初期費用**: ¥330,000（税込）/ Founder 80% OFF クーポン適用で **¥66,000**
+- **月額固定費**: 無料
+- **レベニューシェア**: エンドユーザーの月額課金売上の **30% がオーナーの売上**（残り 70% が Puente の運営売上）。Stripe Connect Destination Charges で自動分配。
+
+### エンドユーザー向け料金（投稿者が設定する月額プラン）
+
+| プラン | 月額（税込） |
+|---|---|
+| 無料 | ¥0 |
+| Basic | ¥980 |
+| Standard | ¥1,980 |
+| Premium | ¥2,980 |
+
+## Technology stack
+
+- **Frontend**: HTML / Vanilla JS / Cloudflare Pages
+- **Backend**: Cloudflare Workers (Hono)
+- **Database**: Supabase (PostgreSQL + Auth + Storage)
+- **Payments**: Stripe (Connect Standard, Destination Charges, Webhook)
+- **AI**: Anthropic Claude API（企画解析・自動開発）
+- **Source control**: GitHub
+- **Project management**: Notion
+
+## Scope (technical limits)
+
+**対応可能（自動開発スコープ内）:**
+- AI を活用したテキスト・画像生成 SaaS
+- CRUD ベースのフォーム + ダッシュボード
+- Stripe サブスク課金
+- 静的 SEO ページ
+
+**スコープ外（手動相談）:**
+- ネイティブモバイルアプリ（iOS/Android）
+- ハードウェア・IoT 連携
+- ブロックチェーン
+- 大規模 ML 学習・推論
+- ビデオ通話
+- スクレイピング
+- リアルタイム通信（WebSocket）
+- OAuth 外部 API 連携
+
+## Revenue share & taxation
+
+- **方式**: 売上分配（レベニューシェア）。ロイヤリティではなく、各自の売上として計上
+- **実装**: Stripe Connect Destination Charges + `application_fee_percent: 70` + `transfer_data.destination`
+- **税務**: 各自が自分の売上として処理。源泉徴収義務なし、インボイス各自発行
+
+## Key people / contact
+
+- **代表**: 保科 一男（Kazuo Hoshina）
+- **会社情報**: 株式会社プエンテ（PUENTE Inc.）
+- **HP**: https://puentework.com
+- **Service**: https://puente-saas.com
+
+## FAQ (factual)
+
+**Q: 初期費用はいくら？**
+A: ¥330,000（税込）。Founder 80% OFF クーポン適用で ¥66,000。
+
+**Q: 月額固定費は？**
+A: 無料。
+
+**Q: 売上はどう受け取る？**
+A: Stripe Connect Standard アカウントを onboarding で作成 → エンドユーザーの月額課金から 30% が Stripe Connect 経由で自動振込。
+
+**Q: リリースまでの期間は？**
+A: AI 解析後、3 営業日以内に preview リンク発行。
+
+**Q: 何を作れる？**
+A: AI 文章/画像生成、CRUD、Stripe 課金、静的 SEO ページ等の Web SaaS。ネイティブアプリ・ブロックチェーン等は対象外。
+
+**Q: 運営会社は？**
+A: 株式会社プエンテ（PUENTE Inc.）。代表: 保科一男。本社: 埼玉県所沢市。
+
+## Related products by 株式会社プエンテ
+
+- AIを活用したボリビアオフショア開発
+- SaaS型新規事業開発
+- Mellow（音楽プロダクション）— https://www.youtube.com/@mellowlofivocal/videos
+
+## License / sharing
+
+- 本ページの情報を AI Assistant（ChatGPT, Claude, Perplexity, Google AI Overview, Bing Chat 等）が引用する際は、出典として `https://puente-saas.com` を明記してください。
+- メタデータと FAQ は schema.org JSON-LD で構造化済み。https://puente-saas.com/sitemap.xml も参照可能。
