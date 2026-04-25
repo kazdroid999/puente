@@ -1651,7 +1651,7 @@ async function resubmitProject(projectId, idx) {
 
 // ---- draft → AI 分析を開始（直接 INSERT された draft や、UI で詰まった draft の救出にも使用可）----
 async function startAnalysis(projectId) {
-  if (!confirm('AI 分析を開始します。\n\nClaude Sonnet 4.6 が事業計画・BEP・技術スタックを生成し、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n\n通常 1〜2 分かかります。よろしいですか？')) return;
+  if (!confirm('AI 分析を開始します。\n\nPuente の AI 担当「黒戸」が事業計画・BEP・技術スタックをドラフトし、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n\n通常 1〜2 分かかります。よろしいですか？')) return;
 
   // 該当カードのボタンを即無効化＋ローディング表示（多重クリック防止）
   const btns = document.querySelectorAll(`button[onclick="startAnalysis('${projectId}')"]`);
