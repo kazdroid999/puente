@@ -601,7 +601,7 @@ footer .copy{border-top:1px solid #2a2a2a;padding-top:24px;font-size:12px;displa
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
           <button id="btn-connect-onboard" class="btn btn-primary" style="display:none;padding:12px 24px;font-size:14px;font-weight:700" onclick="startConnectOnboarding()">Stripe で連携を完了する →</button>
-          <button id="btn-connect-refresh" class="btn btn-ghost" style="display:none;padding:8px 16px;font-size:12px" onclick="loadConnectStatus()">最新状態に更新</button>
+          <button id="btn-connect-refresh" class="btn btn-ghost" style="display:none;padding:8px 16px;font-size:12px" onclick="refreshConnectFromStripe()">最新状態に更新</button>
         </div>
       </div>
     </div>
@@ -1594,8 +1594,11 @@ async function loadConnectStatus() {
       badge.style.color = '#E5A000';
       badge.innerHTML = '⏳ Stripe Connect 連携 — 追加情報が必要';
       title.textContent = '連携設定が未完了です';
-      desc.innerHTML = `Stripe 側で本人確認・銀行口座などの追加情報が必要です。下のボタンから設定を続行してください。完了するまでこの SaaS は公開できません。`;
-      btnOnboard.textContent = 'Stripe で設定を続行する →';
+      const reqList = (window._connectRequirements && window._connectRequirements.length > 0)
+        ? `<div style="background:#fff;border:1px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-top:10px"><div style="font-size:12px;font-weight:700;color:#E5A000;margin-bottom:4px">📋 Stripe からの未提出項目</div><ul style="margin:0;padding-left:20px;font-size:12px;color:var(--ink)">${window._connectRequirements.map(r => `<li>${escHtml(r)}</li>`).join('')}</ul></div>`
+        : '';
+      desc.innerHTML = `Stripe 側で本人確認・銀行口座などの追加情報が必要です。<strong>右の「Stripeで設定を続行する→」ボタン</strong>から設定を続行してください。完了するまでこの SaaS は公開できません。${reqList}<div style="margin-top:8px;font-size:11px;color:var(--sub)">※ Stripe で提出済みの場合は「最新状態に更新」を押すと反映されます（最大 30 秒）。</div>`;
+      btnOnboard.textContent = 'Stripeで設定を続行する →';
       btnOnboard.style.display = 'inline-flex';
       btnRefresh.style.display = 'inline-flex';
     } else {
@@ -1614,6 +1617,30 @@ async function loadConnectStatus() {
   } catch(e) {
     console.error('[connect] loadConnectStatus failed:', e);
     card.style.display = 'none';
+  }
+}
+
+// 「最新状態に更新」ボタン: Stripe API を直接叩いて DB 同期 → UI 再描画
+async function refreshConnectFromStripe() {
+  if (!_connectCompany) {
+    await loadConnectStatus();
+    if (!_connectCompany) return;
+  }
+  const btn = document.getElementById('btn-connect-refresh');
+  if (btn) { btn.disabled = true; btn.textContent = '取得中...'; }
+  try {
+    const res = await apiCall('/api/companies/' + _connectCompany.id + '/connect/refresh', 'POST');
+    if (res?.error) {
+      alert('状態取得に失敗しました: ' + res.error);
+    } else {
+      // Stripe API が返した requirements を UI に渡す
+      window._connectRequirements = res?.requirements || [];
+      await loadConnectStatus();
+    }
+  } catch(e) {
+    alert('エラー: ' + (e?.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '最新状態に更新'; }
   }
 }
 
@@ -1693,14 +1720,16 @@ async function handleConnectReturnPath() {
     attempts++;
     try {
       const res = await apiCall('/api/companies/' + companyId + '/connect/refresh', 'POST');
+      // Stripe からの未提出 requirements を UI 用に保持
+      if (res && Array.isArray(res.requirements)) window._connectRequirements = res.requirements;
       if (res?.charges_enabled === true && res?.payouts_enabled === true) {
         // 完了
         window.history.replaceState({}, '', '/');
         await loadConnectStatus();
         return;
       }
-      if (res?.status === 'restricted') {
-        // 追加情報必要
+      if (res?.status === 'restricted' || res?.details_submitted === true) {
+        // 追加情報必要 / レビュー待ち
         window.history.replaceState({}, '', '/');
         await loadConnectStatus();
         return;
