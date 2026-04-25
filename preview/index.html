@@ -360,6 +360,8 @@ button, a.btn, .cta { min-height: 40px }
   .cat-tab { min-height:36px; padding:8px 14px }
   .ai-app-card { padding:16px 12px }
   .ai-app-card .app-emoji { font-size:32px }
+  /* ユースケースグリッド mobile */
+  .usecase-grid { grid-template-columns: 1fr !important; gap:12px !important }
 }
 /* タブレット中間 (601-900px) でも企画投稿モーダルを使いやすく */
 @media(max-width:900px) and (min-width:601px) {
@@ -546,6 +548,47 @@ button, a.btn, .cta { min-height: 40px }
         <div class="step"><div class="num">STEP 04</div><h4>プレビュー確認 → 公開</h4><p>preview リンクをダッシュボードで通知。あなたが OK で公開ボタンを押すだけ。</p></div>
         <div class="step"><div class="num">STEP 05</div><h4>プロモーション</h4><p>PR Times 配信・Wix ブログ・公式 SNS 紹介投稿はプエンテ広報チームが代行。オーナーも各カードのシェアボタンから自身の SNS にワンクリック投稿できます。</p></div>
       </div>
+    </div>
+  </section>
+
+  <section id="usecases">
+    <div class="wrap">
+      <h2 class="section-title">業種別ユースケース</h2>
+      <p class="section-sub">業務管理 CRUD ＋ AI 自動生成 で立ち上がる Micro SaaS。プエンテ運営中の公式 AI Apps 20 本がそのまま参考実装に。</p>
+      <div class="usecase-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:32px">
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">⚖️ 士業（税理士・社労士・行政書士）</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">顧問先管理 ＋ AI で議事録要約・契約書チェック・経費仕訳</div>
+          <div style="font-size:12px;color:var(--sub)">参考: 経費仕分け AI ／ 見積書・請求書 AI（運営中）</div>
+        </div>
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">🏠 不動産会社</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">物件管理 ＋ AI で物件説明文・リスティング自動生成</div>
+          <div style="font-size:12px;color:var(--sub)">参考: メルカリ出品 AI ／ ハンドメイド出品 AI（運営中）</div>
+        </div>
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">🍽 飲食店オーナー</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">予約・メニュー ＋ AI で SNS 投稿文・口コミ返信・献立提案</div>
+          <div style="font-size:12px;color:var(--sub)">参考: SNS 投稿最適化 AI ／ 冷蔵庫レシピ AI（運営中）</div>
+        </div>
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">💪 フィットネストレーナー</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">会員管理 ＋ AI でトレーニングメニュー個別生成・食事アドバイス</div>
+          <div style="font-size:12px;color:var(--sub)">参考: 天気×コーデ AI（パーソナル提案ロジック・運営中）</div>
+        </div>
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">📚 教育事業者</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">教材販売 ＋ AI で小テスト生成・解説自動・進捗フィードバック</div>
+          <div style="font-size:12px;color:var(--sub)">参考: 資格試験問題 AI ／ プログラミング練習 AI ／ 英会話シーン練習 AI（運営中）</div>
+        </div>
+        <div class="usecase-card" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px">
+          <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:6px">💼 フリーランス</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">プロジェクト管理 ＋ AI で見積書・請求書・営業メール文面生成</div>
+          <div style="font-size:12px;color:var(--sub)">参考: 見積書・請求書 AI ／ 営業メール AI（運営中）</div>
+        </div>
+      </div>
+      <p style="margin-top:24px;font-size:14px;color:var(--sub);text-align:center">他にも、おしらせ文 AI（PTA・町内会）／ おでかけプラン AI ／ 物語プロット AI ／ YouTube 台本 AI ／ 読書要約 AI ／ TRPG シナリオ AI ／ 自分史 AI ／ ペット診断 AI ／ 星座占い AI など、合計 <strong style="color:var(--ink)">20 本の公式 AI Micro SaaS が稼働中</strong>。同じインフラ（Cloudflare Pages + Supabase + Stripe Connect + Claude AI）にあなたのアイデアを乗せるだけで、最短 1 日で SaaS オーナーに。</p>
+      <div style="text-align:center;margin-top:16px"><a class="btn btn-primary" href="#apps">運営中の 20 本を見る →</a></div>
     </div>
   </section>
 
