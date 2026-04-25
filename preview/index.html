@@ -1401,7 +1401,12 @@ function renderProjectDetail(idx) {
     if (p.status === 'ai_analyzing') {
       el.innerHTML = '<div class="ai-card"><p style="text-align:center;font-size:16px">⏳ AI が企画を分析中です…（通常1〜2分）</p><p style="text-align:center;margin-top:8px"><button class="btn btn-ghost" onclick="loadDashboard()" style="padding:8px 16px;font-size:13px">更新</button></p></div>';
     } else if (p.status === 'draft') {
-      el.innerHTML = '<div class="ai-card"><p>まだAI分析が開始されていません。</p></div>';
+      el.innerHTML = `
+        <div class="ai-card" style="text-align:center">
+          <p style="margin-bottom:14px;font-size:15px">まだAI分析が開始されていません。</p>
+          <button class="btn btn-primary" onclick="startAnalysis('${p.id}')" style="padding:12px 28px;font-size:15px;font-weight:700">🤖 AI 分析を開始する</button>
+          <p style="margin-top:10px;font-size:12px;color:var(--sub)">通常 1〜2 分で 3 軸スコアと事業計画ドラフトが出ます</p>
+        </div>`;
     } else {
       el.innerHTML = '<div class="ai-card"><p>AI分析データがありません。</p></div>';
     }
@@ -1641,6 +1646,26 @@ async function resubmitProject(projectId, idx) {
   showMsg(msg, 'success', '✅ 修正を保存しました！AI が再分析中です…ダッシュボードを更新してください。');
 
   // Refresh dashboard after 2s
+  setTimeout(() => loadDashboard(), 2000);
+}
+
+// ---- draft → AI 分析を開始（直接 INSERT された draft や、UI で詰まった draft の救出にも使用可）----
+async function startAnalysis(projectId) {
+  if (!confirm('AI 分析を開始します。\n\nClaude Sonnet 4.6 が事業計画・BEP・技術スタックを生成し、\n3 軸スコア（実現性 / 収益性 / 技術難易度）を算出します。\n\n通常 1〜2 分かかります。よろしいですか？')) return;
+
+  // 該当カードのボタンを即無効化＋ローディング表示（多重クリック防止）
+  const btns = document.querySelectorAll(`button[onclick="startAnalysis('${projectId}')"]`);
+  btns.forEach(b => { b.disabled = true; b.textContent = '⏳ 起動中…'; b.style.opacity = '0.6'; });
+
+  const result = await apiCall('/api/saas/' + projectId + '/analyze', 'POST');
+
+  if (result?.error) {
+    alert('AI 分析の開始に失敗しました: ' + result.error);
+    btns.forEach(b => { b.disabled = false; b.textContent = '🤖 AI 分析を開始する'; b.style.opacity = '1'; });
+    return;
+  }
+
+  alert('✅ AI 分析を開始しました！\n通常 1〜2 分で結果が出ます。ダッシュボードを更新してください。');
   setTimeout(() => loadDashboard(), 2000);
 }
 
