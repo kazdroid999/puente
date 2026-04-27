@@ -875,6 +875,62 @@ button, a.btn, .cta { min-height: 40px }
         <button class="btn btn-ghost" onclick="doLogout()">ログアウト</button>
       </div>
     </div>
+    <!-- 会社情報カード (常に表示・新規登録 or 編集) -->
+    <div id="company-info-card" style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:24px;display:none">
+      <div style="display:flex;align-items:start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="flex:1;min-width:200px">
+          <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🏢 会社情報</div>
+          <div id="company-info-name" style="font-family:'Zen Kaku Gothic New';font-weight:900;font-size:22px;letter-spacing:-.02em;margin-bottom:4px">未登録</div>
+          <div id="company-info-rep" style="font-size:13px;color:var(--sub);line-height:1.7"></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-company-edit" onclick="openCompanyForm()" style="padding:10px 20px;font-size:13px">編集</button>
+      </div>
+      <div id="company-info-warning" style="display:none;background:#FFF3E0;border-left:4px solid #E65100;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:#BF360C">
+        ⚠️ <strong>会社情報のご登録が必要です。</strong>SaaS を投稿する前に、法人名・代表者名をご入力ください（5 秒で完了）。
+      </div>
+    </div>
+
+    <!-- 会社情報入力モーダル -->
+    <div id="company-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center;padding:20px" onclick="if(event.target===this)closeCompanyForm()">
+      <div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+        <h3 style="font-family:'Zen Kaku Gothic New';font-weight:900;font-size:24px;margin-bottom:8px">🏢 会社情報の登録</h3>
+        <p style="color:var(--sub);font-size:13px;margin-bottom:20px">SaaS を投稿・公開するために、まず会社情報をご登録ください。後から編集できます。</p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">法人名 <span style="color:#C62828">*</span></label>
+            <input type="text" id="cf-legal-name" placeholder="例: 合同会社M&Co" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">代表者名 <span style="color:#C62828">*</span></label>
+            <input type="text" id="cf-rep-name" placeholder="例: 保科一男" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">法人番号（任意）</label>
+            <input type="text" id="cf-corporate-number" placeholder="13桁の数字（国税庁発行）" maxlength="13" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+            <div style="font-size:11px;color:var(--sub);margin-top:4px">国税庁の法人番号公表サイトで検索可能</div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">適格請求書発行事業者番号（任意）</label>
+            <input type="text" id="cf-invoice-number" placeholder="例: T1234567890123" maxlength="14" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+            <div style="font-size:11px;color:var(--sub);margin-top:4px">インボイス対応する場合のみ。T + 13 桁の数字</div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">本社所在地（任意）</label>
+            <input type="text" id="cf-address" placeholder="例: 〒359-1106 埼玉県所沢市..." style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px">電話番号（任意）</label>
+            <input type="text" id="cf-phone" placeholder="例: 03-1234-5678" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px">
+          </div>
+          <div id="cf-msg" style="display:none;padding:10px;border-radius:8px;font-size:13px"></div>
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <button class="btn btn-ghost" onclick="closeCompanyForm()" style="padding:12px 20px;font-size:14px">キャンセル</button>
+            <button class="btn btn-primary" onclick="saveCompanyInfo()" id="cf-save-btn" style="flex:1;padding:12px 20px;font-size:14px;font-weight:700">保存する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Founder 80% OFF クーポンカード (初期費用未決済の法人がある時だけ表示) -->
     <div id="founder-coupon-card" class="founder-coupon-card">
       <div class="fc-badge">🎟️ Founder 80% OFF クーポン</div>
@@ -1408,6 +1464,8 @@ async function loadDashboard() {
     document.getElementById('btn-admin').style.display = '';
   }
 
+  // 会社情報カード（常に表示・登録 or 編集導線）
+  loadCompanyInfo().catch(e => console.error('Failed to load company info', e));
   // Founder 80% OFF クーポン表示（初期費用未決済の法人に紐づいた未消費クーポンを優先表示）
   loadFounderCoupon().catch(e => console.error('Failed to load founder coupon', e));
   // /dashboard/connect/return から戻ってきた場合は Stripe API でポーリング、
@@ -2370,6 +2428,138 @@ function filterApps(cat) {
 loadAiApps();
 
 // ---- Founder 80% OFF クーポン表示 ----
+// ---- 会社情報カード ----
+let _ownerCompany = null; // 直近に取得した owner company を保持
+
+async function loadCompanyInfo() {
+  const card = document.getElementById('company-info-card');
+  if (!card || !currentUser) return;
+  try {
+    const { data: companies, error } = await _sb
+      .from('companies')
+      .select('id,legal_name,representative_name,corporate_number,invoice_registration_number,address,phone,first_launch_at')
+      .eq('owner_id', currentUser.id)
+      .order('created_at', { ascending: true });
+    if (error) { console.error('loadCompanyInfo error:', error); return; }
+
+    card.style.display = 'block';
+    const nameEl = document.getElementById('company-info-name');
+    const repEl = document.getElementById('company-info-rep');
+    const warnEl = document.getElementById('company-info-warning');
+    const editBtn = document.getElementById('btn-company-edit');
+
+    if (!companies || companies.length === 0) {
+      // 未登録
+      _ownerCompany = null;
+      nameEl.textContent = '会社情報を登録してください';
+      nameEl.style.color = 'var(--sub)';
+      repEl.textContent = '';
+      warnEl.style.display = 'block';
+      editBtn.textContent = '+ 新規登録';
+      editBtn.classList.remove('btn-ghost');
+      editBtn.classList.add('btn-primary');
+      return;
+    }
+    // 既存会社あり (最初の1件を表示)
+    const company = companies[0];
+    _ownerCompany = company;
+    nameEl.textContent = company.legal_name || '(法人名未設定)';
+    nameEl.style.color = 'var(--ink)';
+    const parts = [];
+    if (company.representative_name) parts.push('代表者: ' + company.representative_name);
+    if (company.invoice_registration_number) parts.push('適格番号: ' + company.invoice_registration_number);
+    if (company.address) parts.push(company.address);
+    repEl.textContent = parts.join(' / ');
+    warnEl.style.display = 'none';
+    editBtn.textContent = '編集';
+    editBtn.classList.remove('btn-primary');
+    editBtn.classList.add('btn-ghost');
+  } catch(e) {
+    console.error('loadCompanyInfo failed:', e);
+  }
+}
+
+function openCompanyForm() {
+  // フォームに現在の値をプリフィル
+  document.getElementById('cf-legal-name').value = _ownerCompany?.legal_name || '';
+  document.getElementById('cf-rep-name').value = _ownerCompany?.representative_name || '';
+  document.getElementById('cf-corporate-number').value = _ownerCompany?.corporate_number || '';
+  document.getElementById('cf-invoice-number').value = _ownerCompany?.invoice_registration_number || '';
+  document.getElementById('cf-address').value = _ownerCompany?.address || '';
+  document.getElementById('cf-phone').value = _ownerCompany?.phone || '';
+  const msgEl = document.getElementById('cf-msg');
+  msgEl.style.display = 'none';
+  msgEl.textContent = '';
+  document.getElementById('company-form-modal').style.display = 'flex';
+}
+
+function closeCompanyForm() {
+  document.getElementById('company-form-modal').style.display = 'none';
+}
+
+async function saveCompanyInfo() {
+  const legalName = document.getElementById('cf-legal-name').value.trim();
+  const repName = document.getElementById('cf-rep-name').value.trim();
+  const corporateNumber = document.getElementById('cf-corporate-number').value.trim();
+  const invoiceNumber = document.getElementById('cf-invoice-number').value.trim();
+  const address = document.getElementById('cf-address').value.trim();
+  const phone = document.getElementById('cf-phone').value.trim();
+  const msgEl = document.getElementById('cf-msg');
+  const saveBtn = document.getElementById('cf-save-btn');
+
+  if (!legalName) { showCompanyMsg('error', '法人名を入力してください'); return; }
+  if (!repName) { showCompanyMsg('error', '代表者名を入力してください'); return; }
+  if (corporateNumber && !/^\d{13}$/.test(corporateNumber)) { showCompanyMsg('error', '法人番号は 13 桁の数字で入力してください'); return; }
+  if (invoiceNumber && !/^T\d{13}$/.test(invoiceNumber)) { showCompanyMsg('error', '適格請求書番号は T + 13 桁の数字で入力してください'); return; }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = '保存中...';
+  try {
+    const payload = {
+      legal_name: legalName,
+      representative_name: repName,
+      corporate_number: corporateNumber || null,
+      invoice_registration_number: invoiceNumber || null,
+      address: address || null,
+      phone: phone || null,
+    };
+    let res;
+    if (_ownerCompany?.id) {
+      // 既存更新
+      res = await apiCall('/api/companies/' + _ownerCompany.id, 'PATCH', payload);
+    } else {
+      // 新規登録
+      res = await apiCall('/api/companies', 'POST', payload);
+    }
+    if (res?.error) { showCompanyMsg('error', res.error); return; }
+    showCompanyMsg('success', '✅ 保存しました');
+    setTimeout(() => {
+      closeCompanyForm();
+      loadCompanyInfo();
+      loadFounderCoupon().catch(() => {});
+      loadConnectStatus().catch(() => {});
+    }, 800);
+  } catch(e) {
+    showCompanyMsg('error', '保存に失敗しました: ' + (e?.message || e));
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存する';
+  }
+}
+
+function showCompanyMsg(type, text) {
+  const msgEl = document.getElementById('cf-msg');
+  msgEl.style.display = 'block';
+  msgEl.textContent = text;
+  if (type === 'error') {
+    msgEl.style.background = '#FFEBEE';
+    msgEl.style.color = '#C62828';
+  } else {
+    msgEl.style.background = '#E8F5E9';
+    msgEl.style.color = '#1B5E20';
+  }
+}
+
 async function loadFounderCoupon() {
   const card = document.getElementById('founder-coupon-card');
   if (!card || !currentUser) return;

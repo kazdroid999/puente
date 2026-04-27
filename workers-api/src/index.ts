@@ -255,6 +255,42 @@ app.patch('/api/companies/:id/invoice', auth, async (c) => {
   return c.json({ company: data });
 });
 
+// 会社情報の全フィールド更新（UI 編集フォーム用）
+app.patch('/api/companies/:id', auth, async (c) => {
+  const uid = c.get('userId');
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  // 法人番号フォーマット検証（任意）: 13 桁数字
+  if (body.corporate_number && !/^\d{13}$/.test(body.corporate_number)) {
+    return c.json({ error: '法人番号は 13 桁の数字で入力してください' }, 400);
+  }
+  // 適格請求書番号フォーマット検証（任意）: T + 13 桁数字
+  if (body.invoice_registration_number && !/^T\d{13}$/.test(body.invoice_registration_number)) {
+    return c.json({ error: '適格請求書番号は T + 13 桁の数字で入力してください（例: T1234567890123）' }, 400);
+  }
+  const updates: Record<string, any> = {};
+  if (typeof body.legal_name === 'string' && body.legal_name.trim()) updates.legal_name = body.legal_name.trim();
+  if (typeof body.representative_name === 'string' && body.representative_name.trim()) updates.representative_name = body.representative_name.trim();
+  if ('corporate_number' in body) updates.corporate_number = body.corporate_number || null;
+  if ('invoice_registration_number' in body) {
+    updates.invoice_registration_number = body.invoice_registration_number || null;
+    updates.is_invoice_registered = !!body.invoice_registration_number;
+  }
+  if ('address' in body) updates.address = body.address || null;
+  if ('phone' in body) updates.phone = body.phone || null;
+  if (Object.keys(updates).length === 0) return c.json({ error: '更新項目がありません' }, 400);
+
+  const { data, error } = await sbu(c)
+    .from('companies')
+    .update(updates)
+    .eq('id', id)
+    .eq('owner_id', uid)
+    .select()
+    .single();
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ company: data });
+});
+
 // ========== Stripe Connect ==========
 app.post('/api/companies/:id/connect', auth, async (c) => {
   const uid = c.get('userId');
