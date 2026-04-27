@@ -238,6 +238,21 @@ ${JSON.stringify(brief, null, 2)}
     throw new Error(`AI returned invalid JSON: ${(parseErr as Error).message}`);
   }
 
+  // ===== BEP 数字の正規化（マリアの計算ミスを Worker 側で補正） =====
+  // 計算式: break_even_mrr = monthly_fixed_cost / 0.7 (Puente 取り分 70%)
+  //         break_even_users = ceil(break_even_mrr / avg_arpu_jpy)
+  // monthly_fixed_cost は SYSTEM_PROMPT で ¥500-1,500 基準に指示済み（1 SaaS あたりの実質増分コスト）
+  if (plan.bep) {
+    const fixedCost = Number(plan.bep.monthly_fixed_cost_jpy) || 1000;
+    const arpu = Number(plan.bep.avg_arpu_jpy) || 1500;
+    // 万一 Puente 共通費を 1 SaaS に被せていたら ¥1,500 でクランプ
+    const fixedCostClamped = Math.min(fixedCost, 1500);
+    plan.bep.monthly_fixed_cost_jpy = fixedCostClamped;
+    plan.bep.break_even_mrr_jpy = Math.ceil(fixedCostClamped / 0.7);
+    plan.bep.break_even_users = Math.max(1, Math.ceil(plan.bep.break_even_mrr_jpy / Math.max(arpu, 1)));
+    console.log(`[AI Analyzer] BEP normalized: fixed=${fixedCostClamped}, arpu=${arpu}, mrr=${plan.bep.break_even_mrr_jpy}, users=${plan.bep.break_even_users}`);
+  }
+
   // ===== 3段階判定ロジック =====
   const totalScore = plan.scoring?.total_score ?? 0;
   const scopeOk = plan.scope_check?.scope_ok !== false; // undefined or true → OK
