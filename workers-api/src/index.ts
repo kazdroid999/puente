@@ -486,7 +486,10 @@ app.post('/api/saas', auth, async (c) => {
   return c.json({ saas: data, message: 'AI分析を開始しました' });
 });
 
-// 手動AI分析トリガー（リトライ用） — waitUntil で非同期実行
+// 手動AI分析トリガー（リトライ用） — 同期 await で実行（waitUntil タイムアウト回避）
+// 改善提案を反映した長文 overview で waitUntil 30s タイムアウトする問題への対策。
+// unbound mode の wall time (15min) 内なら同期 await で完走する。
+// クライアントは 15-30 秒のスピナー表示で待つ。
 app.post('/api/saas/:id/analyze', auth, async (c) => {
   const id = c.req.param('id');
   const { data: saas } = await sbu(c)
@@ -496,22 +499,16 @@ app.post('/api/saas/:id/analyze', auth, async (c) => {
     .single();
   if (!saas) return c.json({ error: 'not found' }, 404);
 
-  const env = c.env;
-  const analysisPromise = analyzeBrief(env, id, saas.brief).catch((err: Error) => {
-    console.error('AI re-analysis failed:', err.message, err.stack);
-    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
-  });
-
   try {
-    const ctx = c.executionCtx;
-    if (ctx && typeof (ctx as any).waitUntil === 'function') {
-      (ctx as any).waitUntil(analysisPromise);
-    }
-  } catch (e) {
-    console.error('waitUntil setup failed:', e);
+    // 同期 await: waitUntil 30s 制限を回避。Worker unbound mode なら最大 15 分まで wall time OK。
+    await analyzeBrief(c.env, id, saas.brief);
+    return c.json({ ok: true, message: 'AI分析が完了しました', saas_id: id });
+  } catch (err: any) {
+    console.error('[/api/saas/:id/analyze] failed:', err?.message ?? err);
+    // 失敗時は draft に戻して再投稿可能状態にする
+    await sbAdmin(c.env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
+    return c.json({ error: 'AI分析に失敗しました: ' + (err?.message || 'unknown') }, 500);
   }
-
-  return c.json({ message: 'AI分析を再開しました', saas_id: id });
 });
 
 // ユーザーの全プロジェクト一覧
@@ -725,22 +722,17 @@ app.put('/api/saas/:id/resubmit', auth, async (c) => {
     .eq('id', id);
   if (updateErr) return c.json({ error: updateErr.message }, 500);
 
-  // AI 再分析をバックグラウンドで実行
-  const env = c.env;
-  const analysisPromise = analyzeBrief(env, id, updatedBrief as any).catch((err: Error) => {
-    console.error('AI resubmit analysis failed:', err.message, err.stack);
-    sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
-  });
+  // ★ AI 再分析を同期 await で実行（waitUntil 30s タイムアウト回避）
+  // 改善提案を反映した長文 overview で stuck する問題への根本対応。
+  // unbound mode 上限 15 分以内の処理時間なら問題なし。
   try {
-    const ctx = c.executionCtx;
-    if (ctx && typeof (ctx as any).waitUntil === 'function') {
-      (ctx as any).waitUntil(analysisPromise);
-    }
-  } catch (e) {
-    console.error('waitUntil setup failed:', e);
+    await analyzeBrief(c.env, id, updatedBrief as any);
+    return c.json({ ok: true, message: 'AI 再分析が完了しました', saas_id: id });
+  } catch (err: any) {
+    console.error('[resubmit] AI analysis failed:', err?.message ?? err);
+    await sbAdmin(c.env).from('saas_projects').update({ status: 'draft' }).eq('id', id);
+    return c.json({ error: 'AI 再分析に失敗しました: ' + (err?.message || 'unknown') }, 500);
   }
-
-  return c.json({ message: '修正を保存し、AI再分析を開始しました', saas_id: id });
 });
 
 app.post('/api/saas/:id/approve', auth, async (c) => {

@@ -1918,7 +1918,7 @@ async function resubmitProject(projectId, idx) {
 
   if (!name || !overview) { showMsg(msg, 'error', 'サービス名と概要は必須です'); return; }
 
-  showMsg(msg, 'success', '修正を保存中…AI再分析を開始します…');
+  showMsg(msg, 'success', '☕️ マリアが再分析中です…15〜30 秒ほどお待ちください。');
 
   const result = await apiCall('/api/saas/' + projectId + '/resubmit', 'PUT', {
     name,
@@ -1928,12 +1928,12 @@ async function resubmitProject(projectId, idx) {
     features: featuresRaw.split('\n').map(s => s.trim()).filter(Boolean),
   });
 
-  if (result?.error) { showMsg(msg, 'error', result.error); return; }
+  if (result?.error) { showMsg(msg, 'error', '❌ ' + result.error); return; }
 
-  showMsg(msg, 'success', '✅ 修正を保存しました！AI が再分析中です…ダッシュボードを更新してください。');
+  showMsg(msg, 'success', '✅ AI 再分析が完了しました 🌸');
 
-  // Refresh dashboard after 2s
-  setTimeout(() => loadDashboard(), 2000);
+  // 同期 await で完了済 → 即 dashboard 更新
+  loadDashboard();
 }
 
 // ---- draft → AI 分析を開始（直接 INSERT された draft や、UI で詰まった draft の救出にも使用可）----
