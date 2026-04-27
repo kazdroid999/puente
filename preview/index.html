@@ -1575,7 +1575,7 @@ function renderProjectDetail(idx) {
         <div><div style="font-size:12px;color:var(--sub)">損益分岐 MRR</div><div style="font-family:Inter;font-weight:700;font-size:24px;color:var(--accent)">¥${(plan.bep?.break_even_mrr_jpy || 0).toLocaleString()}</div></div>
         <div><div style="font-size:12px;color:var(--sub)">損益分岐ユーザー数</div><div style="font-family:Inter;font-weight:700;font-size:24px;color:var(--accent)">${plan.bep?.break_even_users || '-'}人</div></div>
       </div>
-      <p style="margin-top:16px;font-size:13px;color:var(--sub)">※ あなたの取り分は売上の30%です。損益分岐後の利益もこの比率で分配されます。</p>
+      <p style="margin-top:16px;font-size:13px;color:var(--sub)"><strong style="color:var(--accent)">※ 月次固定コストはすべて Puente が負担します</strong>（オーナーの追加負担はありません）。<br>※ あなたの取り分は売上の 30% です。損益分岐後の利益もこの比率で分配されます。</p>
     </div>
     <!-- ターゲット市場 -->
     <div class="ai-card">
