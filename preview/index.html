@@ -1624,9 +1624,19 @@ function renderProjectDetail(idx) {
     </div>` : ''}
     <!-- プロモーション状態 -->
     ${p.status === 'auto_dev' || p.status === 'approved' || p.status === 'published' ? '<div class="ai-card"><h4>SNS プロモーション</h4><p>✅ 承認済み — PR Times / Wix Blog / X / Instagram / YouTube Short のプロモーションキューに自動登録されました。</p></div>' : ''}
-    ${p.status === 'needs_improvement' || p.status === 'rejected' ? `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
+    ${p.status === 'needs_improvement' || p.status === 'rejected' ? (() => {
+      // マリアからの改善提案を概要・機能のデフォルト値に反映
+      const suggestions = Array.isArray(p.ai_plan?.improvement_suggestions) ? p.ai_plan.improvement_suggestions : [];
+      const suggestionsBlock = suggestions.length > 0
+        ? '\n\n— 🌸 マリアからの改善提案（そのまま反映、自由に編集も可）—\n'
+          + suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')
+        : '';
+      const enhancedOverview = (p.brief?.overview || '') + suggestionsBlock;
+      const enhancedRows = Math.min(20, Math.max(6, 4 + suggestions.length * 2));
+      return `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
       <h4>📝 修正して再投稿</h4>
-      <p style="margin-bottom:12px">改善提案を参考に企画を修正してください。スコアが合格ラインを超えると自動開発が開始されます。</p>
+      <p style="margin-bottom:8px">改善提案を参考に企画を修正してください。スコアが合格ラインを超えると自動開発が開始されます。</p>
+      ${suggestions.length > 0 ? `<div style="background:#FFF8E1;border-left:3px solid var(--accent);padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:13px;line-height:1.6"><strong style="color:var(--accent)">🌸 マリアの改善提案を概要欄に反映済み</strong><br>そのまま「修正して再分析」ボタンを押すだけで OK。自由に追記・編集もできます。</div>` : ''}
       <div style="display:flex;flex-direction:column;gap:10px">
         <div>
           <label style="font-size:12px;color:var(--sub)">サービス名</label>
@@ -1643,8 +1653,8 @@ function renderProjectDetail(idx) {
           </select>
         </div>
         <div>
-          <label style="font-size:12px;color:var(--sub)">概要（課題と解決策）</label>
-          <textarea id="resubmit-overview-${idx}" rows="4" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;resize:vertical">${escHtml(p.brief?.overview || '')}</textarea>
+          <label style="font-size:12px;color:var(--sub)">概要（課題と解決策）${suggestions.length > 0 ? '<span style="color:var(--accent);font-weight:700;margin-left:6px">🌸 マリア提案を反映済み</span>' : ''}</label>
+          <textarea id="resubmit-overview-${idx}" rows="${enhancedRows}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;resize:vertical">${escHtml(enhancedOverview)}</textarea>
         </div>
         <div>
           <label style="font-size:12px;color:var(--sub)">ターゲットユーザー</label>
@@ -1657,7 +1667,8 @@ function renderProjectDetail(idx) {
         <div id="resubmit-msg-${idx}"></div>
         <button class="btn" onclick="resubmitProject('${p.id}', ${idx})" style="padding:12px 24px;font-size:15px;font-weight:700;background:#F57F17;color:#fff;border:none;border-radius:8px;cursor:pointer">🔄 修正して再分析</button>
       </div>
-    </div>` : ''}
+    </div>`;
+    })() : ''}
   `;
 }
 
