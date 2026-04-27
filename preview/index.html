@@ -1785,13 +1785,18 @@ function renderProjectDetail(idx) {
     <!-- プロモーション状態 -->
     ${p.status === 'auto_dev' || p.status === 'approved' || p.status === 'published' ? '<div class="ai-card"><h4>SNS プロモーション</h4><p>✅ 承認済み — PR Times / Wix Blog / X / Instagram / YouTube Short のプロモーションキューに自動登録されました。</p></div>' : ''}
     ${p.status === 'needs_improvement' || p.status === 'rejected' ? (() => {
-      // マリアからの改善提案を概要・機能のデフォルト値に反映
+      // マリアからの改善提案を概要欄に反映
+      // ★ 累積バグ修正: 既存 overview に過去の改善提案ブロックがあれば全て除去してから最新だけ追加
+      //   毎回 resubmit する度に「— 🌸 マリアからの改善提案 —」が累積する問題を解消。
       const suggestions = Array.isArray(p.ai_plan?.improvement_suggestions) ? p.ai_plan.improvement_suggestions : [];
+      const rawOverview = (p.brief?.overview || '');
+      // マーカー以降を全削除（複数累積していても最初のマーカーから末尾まで一括カット）
+      const cleanOverview = rawOverview.split('— 🌸 マリアからの改善提案')[0].trim();
       const suggestionsBlock = suggestions.length > 0
         ? '\n\n— 🌸 マリアからの改善提案（そのまま反映、自由に編集も可）—\n'
           + suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')
         : '';
-      const enhancedOverview = (p.brief?.overview || '') + suggestionsBlock;
+      const enhancedOverview = cleanOverview + suggestionsBlock;
       const enhancedRows = Math.min(20, Math.max(6, 4 + suggestions.length * 2));
       return `<div class="ai-card" style="border:2px dashed ${p.status === 'rejected' ? '#C62828' : '#F57F17'}">
       <h4>📝 修正して再投稿</h4>
