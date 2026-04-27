@@ -20,9 +20,25 @@ export function stripeClient(env: Env): Stripe {
 // 既に企業の Connect アカウントがある場合は再利用、無ければ新規作成。
 // Stripe 側にだけ作られて DB に紐付かない孤児アカウントは、metadata.company_id を
 // 頼りに account.list で復元してリカバリする。
-export async function createConnectAccount(env: Env, companyId: string, email: string) {
+//
+// ★ メアド重複対策（2026-04-28 追加）:
+//   同じメアド（owner_email）が他の company の Connect アカウントで既に使われている場合、
+//   `forceNew` が false なら例外（DUPLICATE_EMAIL）を throw → 呼び出し側で確認モーダル表示。
+//   `forceNew` が true なら Stripe アカウント作成時に email を渡さず、既存 Stripe アカウントとの
+//   自動リンクが提案されないようにする（ユーザーは新規 Stripe アカウントとして KYC 開始）。
+export type ConnectCreateResult =
+  | { account_id: string; onboarding_url: string }
+  | { error: 'duplicate_email'; existing_acct_id: string; existing_company_name: string | null; existing_legal_name?: string | null };
+
+export async function createConnectAccount(
+  env: Env,
+  companyId: string,
+  email: string,
+  options: { forceNew?: boolean } = {}
+): Promise<ConnectCreateResult> {
   const stripe = stripeClient(env);
   const admin = sbAdmin(env);
+  const forceNew = !!options.forceNew;
 
   // 1. companies.stripe_connect_account_id が既にあるならそれを使う
   const { data: company } = await admin
@@ -55,15 +71,39 @@ export async function createConnectAccount(env: Env, companyId: string, email: s
     }
   }
 
-  // 3. それでも無ければ新規作成
+  // 3. 新規作成パス（DB にも Stripe metadata にも見つからなかった場合）
   if (!accountId) {
+    // ★ メアド重複事前チェック: 同じ owner_email で別の company が Stripe Connect アカウントを既に持っていないか
+    if (!forceNew && email) {
+      const { data: dupRows } = await admin
+        .from('companies')
+        .select('id,legal_name,stripe_connect_account_id,profiles(email)')
+        .neq('id', companyId)
+        .not('stripe_connect_account_id', 'is', null);
+      const conflict = (dupRows || []).find((r: any) => r?.profiles?.email === email);
+      if (conflict) {
+        return {
+          error: 'duplicate_email',
+          existing_acct_id: conflict.stripe_connect_account_id,
+          existing_company_name: conflict.legal_name,
+        };
+      }
+    }
+
+    // forceNew のときは email を渡さず → Stripe オンボーディング画面で「既存アカウント連携」が提案されない
+    // 通常作成のときは email 渡す → 同じメアドの既存アカウントが Stripe 側にあれば連携提案される（OK）
     const account = await stripe.accounts.create({
       type: 'standard',
       country: 'JP',
-      email,
-      metadata: { company_id: companyId },
+      ...(forceNew ? {} : { email }),
+      metadata: {
+        company_id: companyId,
+        // 強制新規作成時のみ、後で問い合わせ用にメモする
+        ...(forceNew ? { force_new: 'true', requested_email: email } : {}),
+      },
     });
     accountId = account.id;
+    console.log(`[Connect] created new account ${accountId} (forceNew=${forceNew}) for company ${companyId}`);
     // ★ admin (service_role) で update — sb(env) だと user JWT で RLS にブロックされて null のまま残る
     const { error: upErr } = await admin
       .from('companies')

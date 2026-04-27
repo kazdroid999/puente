@@ -2221,7 +2221,8 @@ async function refreshConnectFromStripe() {
   }
 }
 
-async function startConnectOnboarding() {
+async function startConnectOnboarding(opts) {
+  opts = opts || {};
   if (!_connectCompany) {
     await loadConnectStatus();
     if (!_connectCompany) {
@@ -2232,12 +2233,30 @@ async function startConnectOnboarding() {
   const btn = document.getElementById('btn-connect-onboard');
   if (btn) { btn.disabled = true; btn.textContent = '読み込み中...'; }
   try {
-    const res = await apiCall('/api/companies/' + _connectCompany.id + '/connect', 'POST');
+    const path = '/api/companies/' + _connectCompany.id + '/connect' + (opts.forceNew ? '?force_new=1' : '');
+    const res = await apiCall(path, 'POST');
     if (res?.onboarding_url) {
       window.location.href = res.onboarding_url;
-    } else {
-      alert('Stripe Connect URL の取得に失敗しました: ' + (res?.error || 'unknown'));
+      return;
     }
+    // メアド重複検出 → 強制新規作成 vs キャンセル をユーザーに選ばせる
+    if (res?.code === 'duplicate_email') {
+      const existingName = res.existing_company_name || '別法人';
+      const acctTail = res.existing_acct_id_tail || '';
+      const proceed = confirm(
+        '⚠️ 同じメールアドレスが「' + existingName + '」(Stripe acct ...' + acctTail + ') の Stripe Connect で既に使われています。\n\n' +
+        'このまま続行すると、Stripe オンボーディング画面で既存アカウントとの自動連携が提案され、\n' +
+        '別法人なのに同じ Stripe アカウントを共有してしまうリスクがあります（税務上 NG）。\n\n' +
+        '【新規作成モードで進む】を選ぶと、別法人として独立した新しい Stripe アカウントが作成されます。\n' +
+        '（オンボーディング画面で既存アカウント連携の提案が出ません）\n\n' +
+        'OK = 新規作成モードで進む / キャンセル = 中止して別メアドで再登録'
+      );
+      if (proceed) {
+        await startConnectOnboarding({ forceNew: true });
+      }
+      return;
+    }
+    alert('Stripe Connect URL の取得に失敗しました: ' + (res?.error || 'unknown'));
   } catch(e) {
     alert('エラー: ' + (e?.message || e));
   } finally {

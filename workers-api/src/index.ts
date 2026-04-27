@@ -304,7 +304,19 @@ app.post('/api/companies/:id/connect', auth, async (c) => {
     .maybeSingle();
   if (!company) return c.json({ error: 'not found or not owner' }, 404);
   const { data: profile } = await sbAdmin(c.env).from('profiles').select('email').eq('id', uid).maybeSingle();
-  const result = await createConnectAccount(c.env, id, profile?.email ?? '');
+  // force_new=1 が指定されたら（クライアント側で重複警告を承知の上で）強制新規作成
+  const forceNew = c.req.query('force_new') === '1' || c.req.query('force_new') === 'true';
+  const result = await createConnectAccount(c.env, id, profile?.email ?? '', { forceNew });
+  // メアド重複検出 → 409 で警告を返却（クライアントが confirm モーダルで再リクエスト判断）
+  if ('error' in result && result.error === 'duplicate_email') {
+    return c.json({
+      error: '同じメアドが別法人の Stripe Connect で既に使われています',
+      code: 'duplicate_email',
+      existing_company_name: result.existing_company_name,
+      existing_acct_id_tail: result.existing_acct_id?.slice(-6),
+      message: '別法人として独立した Stripe アカウントを新規作成しますか？「強制新規作成」を選ぶと、Stripe オンボーディング画面で既存アカウントとの自動連携が提案されません。',
+    }, 409);
+  }
   return c.json(result);
 });
 
