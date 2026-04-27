@@ -1473,6 +1473,37 @@ async function loadDashboard() {
   if (inProgress) {
     window._dashboardPollTimer = setTimeout(() => loadDashboard(), 5000);
   }
+
+  // C案: 初期費用 Stripe Checkout 完了後の自動再 publish
+  // ?initial_fee=success で戻ってきたら、退避していた projectId を取り出して自動公開
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('initial_fee') === 'success') {
+      const pendingId = sessionStorage.getItem('pending_publish_project_id');
+      // URL クエリを掃除（リロードでループしないよう）
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, '', cleanUrl);
+      if (pendingId) {
+        sessionStorage.removeItem('pending_publish_project_id');
+        // Webhook が first_launch_at をセットするまで少し待つ（Stripe webhook 遅延対策）
+        setTimeout(async () => {
+          const res = await apiCall('/api/saas/' + pendingId + '/publish', 'POST');
+          if (res?.ok) {
+            alert('🎉 初期費用のお支払い完了 → 公開しました ☕️\n' + (res.public_url || ''));
+            loadDashboard();
+          } else {
+            alert('お支払いは完了しましたが、自動公開に失敗しました。\nダッシュボードから「公開する」を再度押してください。\n(' + (res?.error || 'unknown') + ')');
+          }
+        }, 3000);
+      } else {
+        alert('🎉 初期費用のお支払いが完了しました ☕️\n公開したい SaaS を選んで「公開する」を押してください。');
+      }
+    } else if (params.get('initial_fee') === 'cancel') {
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, '', cleanUrl);
+      sessionStorage.removeItem('pending_publish_project_id');
+    }
+  } catch(e) { console.warn('initial_fee return handler failed (non-fatal)', e); }
 }
 
 // ---- Tab Switching ----
@@ -1936,8 +1967,11 @@ async function adminChangeStatus(projectId, newStatus) {
 // ユーザー公開承認
 async function publishProject(projectId) {
   if (!confirm('このSaaSを公開しますか？公開後はサブドメインでアクセス可能になり、ストアトップの一覧にも掲載されます。')) return;
+  // 公開後の自動再実行用に projectId を退避（初期費用支払い完了 → ダッシュボード戻り時に再 publish）
+  try { sessionStorage.setItem('pending_publish_project_id', projectId); } catch(e) {}
   const res = await apiCall('/api/saas/' + projectId + '/publish', 'POST');
   if (res?.ok) {
+    try { sessionStorage.removeItem('pending_publish_project_id'); } catch(e) {}
     alert('✅ 公開しました: ' + (res.public_url || ''));
     loadDashboard();
     return;
@@ -1949,7 +1983,62 @@ async function publishProject(projectId) {
     }
     return;
   }
+  // 初期費用未払いの場合は支払いに案内（C案: 公開時に初期費用必須）
+  if (res?.code === 'initial_fee_required') {
+    const proceed = confirm(
+      '🎉 プレビュー OK ですね！\n\n' +
+      '本番公開には「初期費用（1社1回）」のお支払いが必要です。\n\n' +
+      '・通常価格: ¥330,000（税込）\n' +
+      '・🌸 創業メンバー特別割引: ¥66,000（税込）\n' +
+      '   ダッシュボードの Founder クーポンを Stripe Checkout で適用してください。\n\n' +
+      'お支払い後、自動で公開処理が再実行されます。\n\n今すぐ支払いに進みますか？'
+    );
+    if (proceed) {
+      await startInitialFeeCheckout(res.company_id);
+    }
+    return;
+  }
   alert('公開に失敗しました: ' + (res?.error || 'unknown'));
+}
+
+// 初期費用 Stripe Checkout を起動（C案: 公開時に初期費用必須化）
+async function startInitialFeeCheckout(companyId) {
+  if (!companyId) {
+    alert('会社IDが取得できませんでした。ダッシュボードを再読込してください。');
+    return;
+  }
+  try {
+    // Founder クーポンがあれば自動取得して Checkout に渡す
+    let couponCode = null;
+    try {
+      const { data: companies } = await _sb
+        .from('companies')
+        .select('id,first_launch_at')
+        .eq('id', companyId);
+      if (companies && companies[0] && !companies[0].first_launch_at) {
+        const { data: coupons } = await _sb
+          .from('coupons')
+          .select('code,used_at')
+          .eq('company_id', companyId)
+          .eq('discount_percent', 80)
+          .limit(1);
+        if (coupons && coupons[0] && !coupons[0].used_at) {
+          couponCode = coupons[0].code;
+        }
+      }
+    } catch(e) { console.warn('coupon lookup failed (non-fatal)', e); }
+
+    const res = await apiCall('/api/companies/' + companyId + '/initial-fee-checkout', 'POST', {
+      coupon_code: couponCode,
+    });
+    if (res?.url) {
+      window.location.href = res.url;
+    } else {
+      alert('Checkout URL を取得できませんでした: ' + (res?.error || 'unknown'));
+    }
+  } catch (e) {
+    alert('Checkout の起動に失敗しました: ' + (e?.message || e));
+  }
 }
 
 // ---- Stripe Connect onboarding ----

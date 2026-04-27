@@ -551,7 +551,7 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
     }
     const { data: ownerCompany } = await admin
       .from('companies')
-      .select('id,stripe_connect_account_id,stripe_charges_enabled')
+      .select('id,stripe_connect_account_id,stripe_charges_enabled,first_launch_at')
       .eq('owner_id', ownerId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -563,6 +563,16 @@ app.post('/api/saas/:id/publish', auth, async (c) => {
         onboarding_required: true,
         company_id: ownerCompany?.id ?? null,
       }, 400);
+    }
+    // ★ 初期費用未払い（first_launch_at IS NULL）の場合は公開ブロック
+    //   投稿・分析・preview までは無料、本番公開（=初回ローンチ）で 1社1回の初期費用を回収。
+    //   PR 文「初期費用 1 社 1 回 330,000 円（創業割 66,000 円）」と挙動を一致させる。
+    if (!ownerCompany.first_launch_at) {
+      return c.json({
+        error: '初期費用（1社1回）のお支払いが必要です。プレビュー確認後、初期費用をお支払いいただくと公開できます。',
+        code: 'initial_fee_required',
+        company_id: ownerCompany.id,
+      }, 402);
     }
   }
 
