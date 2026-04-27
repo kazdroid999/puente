@@ -90,20 +90,26 @@ export async function createConnectAccount(
       }
     }
 
-    // forceNew のときは email を渡さず → Stripe オンボーディング画面で「既存アカウント連携」が提案されない
-    // 通常作成のときは email 渡す → 同じメアドの既存アカウントが Stripe 側にあれば連携提案される（OK）
+    // ★★ 必ず email を渡さずに新規作成する（同一人物が複数法人を別 Stripe アカウントで運用するケース対応）
+    //
+    // email を Stripe に渡すと、Stripe オンボーディング画面で
+    // 「同じメアドの既存 Stripe アカウントとリンクしますか？」提案が出る。
+    // ユーザーが「はい」を選ぶと別法人の Stripe アカウントが流用される事故が起きる。
+    //
+    // email を渡さなければ Stripe 画面でこの提案が出ず、新規アカウントとして KYC が走る。
+    // ユーザーが既存ログインを使いたい場合は、Stripe 画面側で明示的に手動ログインする必要がある。
     const account = await stripe.accounts.create({
       type: 'standard',
       country: 'JP',
-      ...(forceNew ? {} : { email }),
+      // email は渡さない（重複連携防止のため）
       metadata: {
         company_id: companyId,
-        // 強制新規作成時のみ、後で問い合わせ用にメモする
-        ...(forceNew ? { force_new: 'true', requested_email: email } : {}),
+        requested_email: email,  // 連絡先 email として metadata にメモ（Stripe 画面では提案されない）
+        ...(forceNew ? { force_new: 'true' } : {}),
       },
     });
     accountId = account.id;
-    console.log(`[Connect] created new account ${accountId} (forceNew=${forceNew}) for company ${companyId}`);
+    console.log(`[Connect] created new account ${accountId} (forceNew=${forceNew}, email withheld) for company ${companyId}`);
     // ★ admin (service_role) で update — sb(env) だと user JWT で RLS にブロックされて null のまま残る
     const { error: upErr } = await admin
       .from('companies')
