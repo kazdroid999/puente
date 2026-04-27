@@ -57,7 +57,7 @@ app.use('/api/*', cors({
   },
   credentials: true,
   allowHeaders: ['authorization', 'content-type', 'stripe-signature'],
-  allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use('/public/*', cors({
   origin: (origin) => {
