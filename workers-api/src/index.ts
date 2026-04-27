@@ -1005,9 +1005,11 @@ app.get('/api/apps/:slug', async (c) => {
 app.get('/api/apps/:slug/usage', auth, async (c) => {
   const uid = c.get('userId');
   const slug = c.req.param('slug');
+  const previewToken = c.req.query('preview');
 
-  // アプリID取得
-  const { data: app } = await sb(c.env)
+  // アプリID取得 — preview 時は sbAdmin で未公開アプリも引く
+  const client = previewToken ? sbAdmin(c.env) : sb(c.env);
+  const { data: app } = await client
     .from('saas_apps').select('id,usage_limits').eq('slug', slug).single();
   if (!app) return c.json({ error: 'app not found' }, 404);
 
@@ -1156,14 +1158,22 @@ function enrichFashionWithLinks(
 app.post('/api/apps/:slug/generate', auth, async (c) => {
   const uid = c.get('userId');
   const slug = c.req.param('slug');
+  const previewToken = c.req.query('preview');
   const body = await c.req.json();
 
-  // アプリ取得
-  const { data: app } = await sb(c.env)
+  // アプリ取得 — preview_token があれば未公開アプリでも取得可（プレビュー試用）
+  const client = previewToken ? sbAdmin(c.env) : sb(c.env);
+  let appQuery = client
     .from('saas_apps')
-    .select('id,name,prompt_template,input_schema,usage_limits')
-    .eq('slug', slug).eq('is_published', true).single();
+    .select('id,name,prompt_template,input_schema,usage_limits,is_published,preview_token')
+    .eq('slug', slug);
+  if (!previewToken) appQuery = appQuery.eq('is_published', true);
+  const { data: app } = await appQuery.single();
   if (!app) return c.json({ error: 'app not found' }, 404);
+  // preview_token 検証: 非公開アプリはトークン一致必須
+  if (!app.is_published && app.preview_token !== previewToken) {
+    return c.json({ error: 'app not found' }, 404);
+  }
 
   // プラン & 使用回数チェック
   const { data: sub } = await sbu(c)
@@ -1264,8 +1274,10 @@ app.post('/api/apps/:slug/generate', auth, async (c) => {
 app.get('/api/apps/:slug/history', auth, async (c) => {
   const uid = c.get('userId');
   const slug = c.req.param('slug');
+  const previewToken = c.req.query('preview');
 
-  const { data: app } = await sb(c.env).from('saas_apps').select('id').eq('slug', slug).single();
+  const client = previewToken ? sbAdmin(c.env) : sb(c.env);
+  const { data: app } = await client.from('saas_apps').select('id').eq('slug', slug).single();
   if (!app) return c.json({ error: 'app not found' }, 404);
 
   const { data } = await sbu(c)

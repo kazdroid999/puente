@@ -508,9 +508,10 @@ async function init() {
     slug = host.split('.')[0];
   }
 
-  // Check for preview token in URL
+  // Check for preview token in URL — グローバル化（generate/usage/history/checkout でも使う）
   const urlParams = new URLSearchParams(window.location.search);
-  const previewToken = urlParams.get('preview');
+  window._previewToken = urlParams.get('preview');
+  const previewToken = window._previewToken;
   const previewQuery = previewToken ? '?preview=' + encodeURIComponent(previewToken) : '';
 
   // Fetch individual app details (includes input_schema)
@@ -604,7 +605,7 @@ async function onAuthReady() {
   // Load usage
   if (appConfig) {
     try {
-      const usage = await apiCall('/api/apps/' + appConfig.slug + '/usage');
+      const usage = await apiCall('/api/apps/' + appConfig.slug + '/usage' + (window._previewToken ? '?preview=' + encodeURIComponent(window._previewToken) : ''));
       currentUsage = usage;
       document.getElementById('usage-badge').style.display = '';
       document.getElementById('usage-count').textContent = usage.used;
@@ -665,7 +666,7 @@ async function handleGenerate(e) {
   btn.disabled = true;
 
   try {
-    const res = await apiCall('/api/apps/' + appConfig.slug + '/generate', 'POST', body);
+    const res = await apiCall('/api/apps/' + appConfig.slug + '/generate' + (window._previewToken ? '?preview=' + encodeURIComponent(window._previewToken) : ''), 'POST', body);
     if (res.error === 'usage_limit_exceeded') {
       document.getElementById('limit-banner').style.display = '';
       document.getElementById('result-area').innerHTML = `
@@ -770,7 +771,7 @@ async function loadHistory() {
     document.getElementById('history-list').innerHTML = '<p style="color:var(--sub);text-align:center">ログインすると利用履歴が表示されます</p>';
     return;
   }
-  const res = await apiCall('/api/apps/' + appConfig.slug + '/history');
+  const res = await apiCall('/api/apps/' + appConfig.slug + '/history' + (window._previewToken ? '?preview=' + encodeURIComponent(window._previewToken) : ''));
   const list = res.history || [];
   if (list.length === 0) {
     document.getElementById('history-list').innerHTML = '<p style="color:var(--sub);text-align:center">まだ利用履歴がありません</p>';
