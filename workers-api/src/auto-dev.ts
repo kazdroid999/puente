@@ -258,7 +258,7 @@ async function createStripeProducts(
   });
 
   const priceConfigs = [
-    { key: 'free',     label: '無料',       price: 0,    limit: 5 },
+    { key: 'free',     label: '無料',       price: 0,    limit: 3 },
     { key: 'basic',    label: 'ベーシック',  price: 980,  limit: 30 },
     { key: 'standard', label: 'スタンダード', price: 1980, limit: 100 },
     { key: 'premium',  label: 'プレミアム',  price: 2980, limit: -1 },
@@ -367,9 +367,9 @@ export async function runAutoDev(
 
   // === Step 4: Insert saas_apps record ===
   console.log('[AutoDev] Step 4: Creating saas_apps record...');
-  const usageLimits = { free: 5, basic: 30, standard: 100, premium: -1 };
+  const usageLimits = { free: 3, basic: 30, standard: 100, premium: -1 };
   const defaultPlans = [
-    { key: 'free', label: '無料', price: 0, limit: 5 },
+    { key: 'free', label: '無料', price: 0, limit: 3 },
     { key: 'basic', label: 'ベーシック', price: 980, limit: 30 },
     { key: 'standard', label: 'スタンダード', price: 1980, limit: 100 },
     { key: 'premium', label: 'プレミアム', price: 2980, limit: -1 },
