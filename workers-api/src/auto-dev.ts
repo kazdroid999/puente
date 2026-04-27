@@ -54,6 +54,19 @@ function generateSlug(name: string): string {
     slug = 'app-' + Math.abs(hash).toString(36).slice(0, 6);
   }
 
+  // ★ DNS-safe な slug に正規化:
+  //   1) 英数字以外（空白・記号・全角等）を hyphen に
+  //   2) 連続 hyphen を単一に
+  //   3) 先頭末尾の hyphen を除去
+  //   4) 最大 40 文字に切り詰め
+  slug = slug
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  // 空文字フォールバック
+  if (!slug) slug = 'app';
+
   // Append random suffix for uniqueness
   const suffix = Math.random().toString(36).slice(2, 6);
   return `${slug}-${suffix}`;
