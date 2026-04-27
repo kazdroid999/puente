@@ -517,14 +517,23 @@ app.post('/api/saas/:id/analyze', auth, async (c) => {
 // ユーザーの全プロジェクト一覧
 app.get('/api/saas', auth, async (c) => {
   const uid = c.get('userId');
-  const { data, error } = await sbu(c)
+  // ★ 「自分の案件のみ表示」を明示的に絞る (super_admin でも対象を own のみに固定)
+  // 全件閲覧は別途 /api/admin/* 系エンドポイント (スーパーアドミンページ) を利用する。
+  const db = sbu(c);
+  const { data: ownCompanies } = await db
+    .from('companies')
+    .select('id')
+    .eq('owner_id', uid);
+  const ownCompanyIds = (ownCompanies || []).map((co: any) => co.id);
+  if (ownCompanyIds.length === 0) {
+    return c.json({ projects: [] });
+  }
+  const { data, error } = await db
     .from('saas_projects')
     .select('id,name,slug,category,status,ai_plan,brief,created_at,updated_at,preview_url,public_url,dev_phase,dev_progress,dev_started_at')
+    .in('company_id', ownCompanyIds)
     .order('created_at', { ascending: false });
-
   if (error) return c.json({ error: error.message }, 400);
-
-  // RLSで owner のプロジェクトだけ返る（super_adminなら全件）
   return c.json({ projects: data });
 });
 
