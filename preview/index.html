@@ -2097,7 +2097,7 @@ async function startInitialFeeCheckout(companyId) {
     return;
   }
   try {
-    // Founder クーポンがあれば自動取得して Checkout に渡す
+    // 未使用クーポンのうち最高割引率を自動取得（80% Founder / 99% テスト 等を一律対応）
     let couponCode = null;
     try {
       const { data: companies } = await _sb
@@ -2107,12 +2107,14 @@ async function startInitialFeeCheckout(companyId) {
       if (companies && companies[0] && !companies[0].first_launch_at) {
         const { data: coupons } = await _sb
           .from('coupons')
-          .select('code,used_at')
+          .select('code,used_at,discount_percent')
           .eq('company_id', companyId)
-          .eq('discount_percent', 80)
+          .is('used_at', null)
+          .order('discount_percent', { ascending: false })
           .limit(1);
-        if (coupons && coupons[0] && !coupons[0].used_at) {
+        if (coupons && coupons[0]) {
           couponCode = coupons[0].code;
+          console.log('[checkout] coupon applied:', couponCode, coupons[0].discount_percent + '%');
         }
       }
     } catch(e) { console.warn('coupon lookup failed (non-fatal)', e); }
