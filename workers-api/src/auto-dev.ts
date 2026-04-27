@@ -140,8 +140,9 @@ async function generateAppConfig(
 }> {
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
+  // Haiku 4.5 で確実に waitUntil 30s 内に収める (Sonnet 4.6 は時間切れリスク)
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
     system: APP_GEN_SYSTEM,
     messages: [
