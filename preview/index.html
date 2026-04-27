@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3D2C24">
 <meta name="format-detection" content="telephone=no">
 <title>Puente Micro SaaS Store — アイデアを最短即日 SaaS 化｜株式会社プエンテ</title>
-<meta name="description" content="アイデアを投稿するだけで、AI が事業計画・技術スタックを設計し、最短即日（数十分〜最大 1 営業日）でSaaSとして自動ローンチ。月額課金は Stripe Connect で オーナー 30% / Puente 70% に自動分配。初期費用 ¥66,000（80% OFF Founder クーポン適用）。">
+<meta name="description" content="アイデアを投稿するだけで、AI が事業計画・技術スタックを設計し、最短即日でSaaSとして自動ローンチ。投稿・AI分析・preview・修正は全部無料。本番公開時のみ初期費用 ¥330,000（創業割 ¥66,000）。月額固定費は0円。月額課金は Stripe Connect で オーナー 30% / Puente 70% 自動分配。">
 <meta name="keywords" content="Puente Micro SaaS,Puente,プエンテ,Micro SaaS,SaaS立ち上げ,AI SaaS,完全自動,1日でSaaS化,Stripe Connect,レベニューシェア,新規事業,SaaSアイデア,AIエージェント">
 <meta name="author" content="株式会社プエンテ (PUENTE Inc.)">
 <meta name="robots" content="index,follow,max-image-preview:large">
@@ -90,7 +90,9 @@
       "@id": "https://puente-saas.com/#faq",
       "mainEntity": [
         {"@type": "Question", "name": "Puente Micro SaaS Store とは何ですか？", "acceptedAnswer": {"@type": "Answer", "text": "アイデアを投稿するだけで、AI が事業計画と技術スタックを設計し、完全自動で1営業日以内にSaaSをローンチするサービスです。エンジニアの作業を介さず AI とインフラ自動化（Cloudflare Pages + Supabase + Stripe）だけで動きます。月額課金売上は Stripe Connect により オーナー 30% / Puente 70% に自動分配されます。"}},
-        {"@type": "Question", "name": "費用はいくらですか？", "acceptedAnswer": {"@type": "Answer", "text": "初期費用 ¥330,000（税込、Founder 80% OFF クーポン適用で ¥66,000）。月額固定費は無料。エンドユーザーからの月額課金売上の 70% を Puente が運営費として、30% をオーナーが受け取ります。"}},
+        {"@type": "Question", "name": "費用はいくらですか？", "acceptedAnswer": {"@type": "Answer", "text": "初期費用 ¥330,000（税込、Founder 80% OFF クーポン適用で ¥66,000）。本番公開時のみお支払いいただきます。アカウント登録・企画投稿・AI 分析・修正フォームからの再投稿・再分析・preview 確認までは全て無料です。月額固定費は無料。エンドユーザーからの月額課金売上の 70% を Puente が運営費として、30% をオーナーが受け取ります。"}},
+        {"@type": "Question", "name": "無料で試せますか？", "acceptedAnswer": {"@type": "Answer", "text": "はい。アカウント登録・企画投稿・AI 分析・事業計画/BEP/技術スタック設計・修正フォームからの再投稿・再分析・preview 確認まで全て無料です。実際にプレビューサイトで動作を確認したうえで、本番公開（=初期費用支払い）を判断いただけます。"}},
+        {"@type": "Question", "name": "初期費用はいつ支払いますか？", "acceptedAnswer": {"@type": "Answer", "text": "本番公開時にお支払いいただきます。「公開する」ボタンを押した時点で Stripe Checkout が起動します。気に入らなければそのまま離脱可能、課金は発生しません。"}},
         {"@type": "Question", "name": "リリースまでどれくらいかかりますか？", "acceptedAnswer": {"@type": "Answer", "text": "アイデア投稿後、AI が即座に解析・スコアリングし、合格ライン以上で完全自動開発が即時スタート。最短数十分（即日）、最大でも 1 営業日以内に preview リンクが発行され、オーナーがダッシュボードで OK ボタンを押せば即時公開できます。"}},
         {"@type": "Question", "name": "売上はどう受け取りますか？", "acceptedAnswer": {"@type": "Answer", "text": "Stripe Connect Standard アカウントを onboarding で作成し、エンドユーザーの月額課金から 30% が Stripe Connect 経由で直接オーナーの口座に自動振込されます。"}},
         {"@type": "Question", "name": "技術スコープは？", "acceptedAnswer": {"@type": "Answer", "text": "Web ベースの SaaS、AI（テキスト/画像生成）、CRUD、Stripe 課金が対象。ネイティブモバイルアプリ、ハードウェア、ブロックチェーン、大規模 ML、ビデオ通話、スクレイピングはスコープ外です。"}}
@@ -526,9 +528,10 @@ button, a.btn, .cta { min-height: 40px }
           <button class="btn btn-primary" onclick="handleCTA()">企画を投稿する →</button>
           <a href="#apps" class="btn btn-ghost">公開中のSaaSを見る</a>
         </div>
+        <p style="margin-top:14px;font-size:13px;color:var(--sub);line-height:1.7"><strong style="color:var(--accent)">💡 投稿・AI分析・preview・修正は全部無料</strong>。本番公開時にのみ初期費用 ¥330,000（創業割 ¥66,000）が発生します。</p>
         <div class="kpi">
           <div class="item"><div class="num">1<span>日</span></div><div class="lbl">アイデア → ローンチ</div></div>
-          <div class="item"><div class="num">¥330,000</div><div class="lbl">初期設定費用（先着 80% OFF）</div></div>
+          <div class="item"><div class="num">¥330,000</div><div class="lbl">初期設定費用（公開時のみ・先着 80% OFF）</div></div>
           <div class="item"><div class="num">¥0</div><div class="lbl">月額プラットフォーム費</div></div>
           <div class="item"><div class="num"><span>30</span>%</div><div class="lbl">ユーザー側 売上シェア</div></div>
         </div>
@@ -718,8 +721,20 @@ button, a.btn, .cta { min-height: 40px }
           <p>いいえ。企画概要・対象ユーザー・欲しい機能をダッシュボードから投稿するだけです。AIが事業計画やBEPを自動設計し、Puenteが開発・運用・保守をすべて行います。</p>
         </details>
         <details class="faq-item">
+          <summary>初期費用はいつ支払うのですか？</summary>
+          <p><strong>本番公開時にお支払いいただきます。</strong>アカウント登録・企画投稿・AI 分析・プレビュー確認までは <strong>すべて無料</strong> でお試しいただけます。プレビューでサービスを確認後、「公開する」ボタンを押した時点で初期費用 ¥330,000（税込）の Stripe Checkout が起動します。気に入らなければそのまま離脱可能、課金は発生しません。</p>
+        </details>
+        <details class="faq-item">
           <summary>初期費用以外に費用はかかりますか？</summary>
-          <p>月額プラットフォーム費は0円です。初期費用330,000円（税込）のみで、ホスティング・運用保守・障害対応すべて込みです。現在、先着の創業メンバー価格として80%OFFの66,000円で提供中です。</p>
+          <p>月額プラットフォーム費は 0 円です。初期費用 ¥330,000（税込）のみで、ホスティング・運用保守・障害対応すべて込みです。現在、先着の創業メンバー価格として 80% OFF の ¥66,000 で提供中です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>無料で試せますか？</summary>
+          <p>はい。<strong>アカウント登録・企画投稿・AI 分析・事業計画/BEP/技術スタック設計・修正フォームからの再投稿・再分析・プレビュー確認まですべて無料</strong>です。マリア（24h チャット）への相談も無料。気が済むまで何度でも企画をブラッシュアップしていただけます。実際にプレビューサイトで動作を確認したうえで、本番公開（=初期費用支払い）を判断いただけます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>企画の修正・再分析にも費用はかかりますか？</summary>
+          <p>いいえ、<strong>修正フォームからの再投稿、AI による再分析、再 auto-dev、再プレビューまで全て無料</strong>です。マリアの改善提案を反映してスコアを上げる過程に追加費用は発生しません。何度でも納得いくまで磨いていただけます。</p>
         </details>
         <details class="faq-item">
           <summary>売上の分配はどうなりますか？</summary>
@@ -753,6 +768,13 @@ button, a.btn, .cta { min-height: 40px }
     <div class="wrap">
       <h2 class="section-title">料金</h2>
       <p class="section-sub">初期設定費用のみ。月額プラットフォーム費は0円。</p>
+      <div style="background:#FFF5EF;border:2px solid var(--accent);border-radius:12px;padding:16px 20px;margin:0 auto 32px;max-width:820px;text-align:left">
+        <p style="font-size:15px;color:var(--accent);margin:0 0 8px;font-weight:700;text-align:center">📌 初期費用は「本番公開時」にお支払いいただきます。</p>
+        <p style="font-size:13px;color:var(--ink);margin:0;line-height:1.85">
+          <strong>✅ 無料</strong>: アカウント登録 / 企画の作成・投稿 / AI 分析・スコアリング / 事業計画・BEP・技術スタック自動生成 / マリア改善提案 / <strong>修正フォームからの再投稿・再分析</strong> / preview サイトでの動作確認 / マリア 24h チャット相談<br>
+          <strong style="color:var(--accent)">💳 課金</strong>: <strong>「公開する」ボタン押下時のみ</strong> 初期費用 ¥330,000（創業割 ¥66,000）の Stripe Checkout が起動します。気に入らなければ離脱可能、課金は発生しません。
+        </p>
+      </div>
       <div class="pricing">
         <div class="wrap">
           <div class="plans">
@@ -1686,6 +1708,10 @@ function renderProjectDetail(idx) {
       <h4>🎬 プレビュー確認 → 公開する</h4>
       <p style="margin-bottom:12px">AI が自動開発を完了しました。プレビューを確認し、問題なければ「公開する」を押してください。公開後は <code>${p.slug ? `${escHtml(p.slug)}.puente-saas.com` : 'slug決定後のサブドメイン'}</code> でアクセス可能になります。</p>
       ${p.preview_url ? `<p style="margin-bottom:12px"><a href="${escHtml(p.preview_url)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 20px;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;text-decoration:none;font-weight:600">🔗 プレビューを開く</a></p>` : '<p style="color:var(--sub);font-size:13px;margin-bottom:12px">プレビュー URL を取得中...</p>'}
+      <div style="background:#fff;border-left:4px solid var(--accent);padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;line-height:1.7">
+        <strong style="color:var(--accent)">💳 公開時に初期費用 ¥330,000（創業割 ¥66,000）が発生します。</strong><br>
+        ここまで（投稿・分析・preview・修正・再投稿）はすべて無料です。「公開する」を押すと Stripe Checkout が起動。気に入らなければ離脱可能、課金は発生しません。
+      </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="publishProject('${p.id}')" style="padding:12px 24px;font-size:15px;font-weight:700">✅ 公開する</button>
         <button class="btn btn-ghost" onclick="requestRework('${p.id}')" style="padding:12px 24px;font-size:14px">🔧 やり直しを依頼</button>
