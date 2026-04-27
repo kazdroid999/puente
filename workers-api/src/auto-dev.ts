@@ -277,6 +277,30 @@ async function createStripeProducts(
   return { product_id: product.id, plans };
 }
 
+// ========== Phase Tracking (進捗表示) ==========
+// マリアが頑張ってプログラミングしてる感を出す日本語フェーズ
+const PHASES = {
+  start:     { progress: 5,   phase: '📖 マリアが企画書を読み込み中…' },
+  config:    { progress: 25,  phase: '✏️ マリアが画面の構成を考えてます' },
+  building:  { progress: 50,  phase: '⌨️ マリアがプログラミング中…！' },
+  deploying: { progress: 80,  phase: '🚀 マリアがデプロイ準備中' },
+  done:      { progress: 100, phase: '✨ マリアが完成させました ☕️' },
+} as const;
+
+async function setPhase(
+  s: ReturnType<typeof sbAdmin>,
+  saasProjectId: string,
+  key: keyof typeof PHASES,
+): Promise<void> {
+  const { progress, phase } = PHASES[key];
+  // フェーズ更新は必ず非ブロッキング（失敗しても auto-dev 本体は止めない）
+  try {
+    await s.from('saas_projects').update({ dev_phase: phase, dev_progress: progress }).eq('id', saasProjectId);
+  } catch (e) {
+    console.warn('[AutoDev] setPhase failed (non-fatal):', (e as Error).message);
+  }
+}
+
 // ========== Main: Auto Dev Pipeline ==========
 export async function runAutoDev(
   env: Env,
@@ -289,6 +313,17 @@ export async function runAutoDev(
 
   console.log(`[AutoDev] Starting auto-dev for project=${saasProjectId}, name=${brief.name}`);
 
+  // 開始: 開始時刻 + 初期フェーズ
+  try {
+    await s.from('saas_projects').update({
+      dev_started_at: new Date().toISOString(),
+      dev_phase: PHASES.start.phase,
+      dev_progress: PHASES.start.progress,
+    }).eq('id', saasProjectId);
+  } catch (e) {
+    console.warn('[AutoDev] dev_started_at init failed (non-fatal):', (e as Error).message);
+  }
+
   // === Step 1: Generate app config via Claude ===
   console.log('[AutoDev] Step 1: Generating prompt_template + input_schema...');
   let appConfig: Awaited<ReturnType<typeof generateAppConfig>>;
@@ -300,6 +335,7 @@ export async function runAutoDev(
     throw err;
   }
   console.log('[AutoDev] App config generated successfully');
+  await setPhase(s, saasProjectId, 'config');
 
   // === Step 2: Generate slug ===
   let slug = generateSlug(brief.name);
@@ -366,6 +402,7 @@ export async function runAutoDev(
   const appId = newApp.id;
   const previewToken = newApp.preview_token;
   console.log(`[AutoDev] App created: id=${appId}, slug=${slug}`);
+  await setPhase(s, saasProjectId, 'building');
 
   // === Step 5: Setup DNS ===
   console.log('[AutoDev] Step 5: Setting up DNS...');
@@ -373,6 +410,8 @@ export async function runAutoDev(
   if (!dnsOk) {
     console.warn(`[AutoDev] DNS setup failed/skipped for ${subdomain} — will need manual setup`);
   }
+
+  await setPhase(s, saasProjectId, 'deploying');
 
   // === Step 6: Create Stripe products ===
   console.log('[AutoDev] Step 6: Creating Stripe product + prices...');
@@ -403,6 +442,8 @@ export async function runAutoDev(
     preview_url: previewUrl,
     public_url: `https://${subdomain}.puente-saas.com`,
     slug,
+    dev_phase: PHASES.done.phase,
+    dev_progress: PHASES.done.progress,
   }).eq('id', saasProjectId);
 
   console.log(`[AutoDev] Pipeline complete! Preview: ${previewUrl}`);
