@@ -68,7 +68,8 @@ const SYSTEM_PROMPT = `あなたは「黒戸マリア」、株式会社プエン
 ユーザー体験として「2-3 回のリトライで突破」が理想。一発合格は禁止。
 - 初回: 70〜78 中央値、上限79（突破させない）。改善提案で +5〜7 伸ばす余地を残す
 - 2回目: 78〜83 を狙う改善提案を設計
-- 3回目: 80+ で突破（auto_dev へ）
+- 3回目以降: **scope_ok=true** かつ **改善提案の主要要素（契約書面化・課金階段・先読み配信・SNS シェア・公式紹介 等）が 4 つ以上反映されてれば 80+ で突破させる（auto_dev へ）**
+- 4回目以降は粘らせず突破（ユーザー体験悪化）
 - スコア 60 未満でない限り rejected しない（再挑戦の機会を奪わない）
 - 口調例: 1回目「骨格は良いと思います ☕️ あと数点で通せるラインです」/ 2回目「グッと伸びましたね 🌸」/ 突破「通りました！☕️」
 
@@ -236,6 +237,28 @@ ${JSON.stringify(brief, null, 2)}
     console.error(`[AI Analyzer] JSON parse failed for ${saasId}:`, (parseErr as Error).message);
     await sbAdmin(env).from('saas_projects').update({ status: 'draft' }).eq('id', saasId);
     throw new Error(`AI returned invalid JSON: ${(parseErr as Error).message}`);
+  }
+
+  // ===== スコア後押し（リトライで頑張ったユーザーを救済） =====
+  // scope_ok=true かつ overview に主要改善要素が 4 つ以上反映されてれば、
+  // total_score を 80+ に押し上げて auto_dev に進めるブースト。
+  // マリアの「2-3 リトライで突破」設計が 4 回目以降も 78 で止まる現象への対策。
+  if (plan.scope_check?.scope_ok === true && plan.scoring && typeof plan.scoring.total_score === 'number') {
+    const overview = String(brief.overview || '');
+    const indicators: Array<[string, RegExp]> = [
+      ['契約書面化',   /(契約|ライセンス|許諾|監修)[^\n]{0,30}(書面化|書面|締結|確保|済|合意)/],
+      ['課金階段3段',  /(無料|フリー)[^\n]{0,40}(¥?980|月額\s*980)[^\n]{0,40}(¥?1,?980|月額\s*1,?980)/],
+      ['先読み配信',   /(23:00|23時|先読み|定期配信|プッシュ通知|毎晩)/],
+      ['SNS シェア',   /(OG\s*画像|エッセイ.*画像|シェア機能|シェア用)/],
+      ['公式紹介',     /(YouTube\s*公式|公式チャンネル|相互プロモ|チャンネル.*紹介|概要欄)/],
+    ];
+    const hits = indicators.filter(([_, re]) => re.test(overview)).map(([name]) => name);
+    if (hits.length >= 4 && plan.scoring.total_score < 85) {
+      const bonus = Math.min(10, 85 - plan.scoring.total_score);
+      const before = plan.scoring.total_score;
+      plan.scoring.total_score = before + bonus;
+      console.log(`[AI Analyzer] Score boost +${bonus} (${before}→${plan.scoring.total_score}) indicators=${hits.length}/${indicators.length} [${hits.join(',')}]`);
+    }
   }
 
   // ===== BEP 数字の正規化（マリアの計算ミスを Worker 側で補正） =====
