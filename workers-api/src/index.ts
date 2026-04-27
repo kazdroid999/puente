@@ -471,7 +471,7 @@ app.get('/api/saas', auth, async (c) => {
   const uid = c.get('userId');
   const { data, error } = await sbu(c)
     .from('saas_projects')
-    .select('id,name,slug,category,status,ai_plan,brief,created_at,updated_at,preview_url,public_url')
+    .select('id,name,slug,category,status,ai_plan,brief,created_at,updated_at,preview_url,public_url,dev_phase,dev_progress,dev_started_at')
     .order('created_at', { ascending: false });
 
   if (error) return c.json({ error: error.message }, 400);
