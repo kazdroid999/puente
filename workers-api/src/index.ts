@@ -1162,8 +1162,8 @@ app.post('/api/apps/:slug/generate', auth, async (c) => {
   const body = await c.req.json();
 
   // アプリ取得 — preview_token があれば未公開アプリでも取得可（プレビュー試用）
-  const client = previewToken ? sbAdmin(c.env) : sb(c.env);
-  let appQuery = client
+  const sbForApp = previewToken ? sbAdmin(c.env) : sb(c.env);
+  let appQuery = sbForApp
     .from('saas_apps')
     .select('id,name,prompt_template,input_schema,usage_limits,is_published,preview_token')
     .eq('slug', slug);
