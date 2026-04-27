@@ -1589,11 +1589,8 @@ function renderProjectDetail(idx) {
       <h4>コア機能</h4>
       <ul>${(plan.core_features || []).map(f => '<li><strong>' + escHtml(f.name) + '</strong> (' + f.priority + ') — ' + escHtml(f.description) + '</li>').join('')}</ul>
     </div>
-    <!-- 1日ロードマップ -->
-    <div class="ai-card">
-      <h4>1日開発ロードマップ</h4>
-      ${(plan.roadmap_3day || []).map(d => '<div style="margin-bottom:12px"><strong style="color:var(--accent)">Day ' + d.day + '</strong><ul>' + d.tasks.map(t => '<li>' + escHtml(t) + '</li>').join('') + '</ul></div>').join('')}
-    </div>
+    <!-- マリアからの一言（プロモプラン） -->
+    ${plan.promotion_plan ? `<div class="ai-card" style="background:linear-gradient(180deg,#FFE4ED 0%,#FFFEFA 100%);border-left:4px solid var(--accent)"><h4>🌸 マリアからのメッセージ</h4><p style="white-space:pre-wrap;line-height:1.7">${escHtml(plan.promotion_plan)}</p></div>` : ''}
     <!-- リスク / KPI -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="ai-card">

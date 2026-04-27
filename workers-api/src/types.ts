@@ -54,14 +54,6 @@ export interface AiPlan {
   executive_summary: string;
   target_market: { persona: string; pain: string; tam_jpy: number };
   core_features: { name: string; description: string; priority: 'P0' | 'P1' | 'P2' }[];
-  tech_stack: {
-    frontend: string;
-    backend: string;
-    db: string;
-    hosting: string;
-    auth: string;
-    payments: string;
-  };
   bep: {
     monthly_fixed_cost_jpy: number;
     avg_arpu_jpy: number;
@@ -70,7 +62,7 @@ export interface AiPlan {
   };
   risks: string[];
   kpis: string[];
-  roadmap_3day: { day: 1 | 2 | 3; tasks: string[] }[];
+  promotion_plan?: string;  // マリアからの励ましメッセージ
   scope_check?: {
     scope_ok: boolean;
     out_of_scope_features: string[];
@@ -80,4 +72,7 @@ export interface AiPlan {
   decision?: 'auto_dev' | 'needs_improvement' | 'rejected';
   improvement_suggestions?: string[] | null;
   rejection_reason?: string | null;
+  // 廃止: tech_stack（技術詳細はノウハウ非開示）, roadmap_3day（自動開発のため不要）
+  tech_stack?: any;  // 後方互換のため optional のまま残す
+  roadmap_3day?: any;  // 後方互換のため optional のまま残す
 }
