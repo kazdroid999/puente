@@ -171,12 +171,12 @@ export async function analyzeBrief(env: Env, saasId: string, brief: SaasBrief): 
   // Phase 2 RAG: 同カテゴリの直近 published SaaS 実績を system prompt に注入
   const similarCasesPrompt = await fetchSimilarCasesPrompt(env, brief);
 
-  // Haiku 4.5: 5-15s で完走、Cloudflare Workers の waitUntil 30s 制限内に確実収まる
-  // Sonnet 4.6 (30-60s) では waitUntil タイムアウトで analyzer が打ち切られていた
-  // max_tokens は 4096 必要 (JSON スキーマが大きい、2048 では途中切れエラーになる)
+  // Haiku 4.5: 同期 await で実行（waitUntil 廃止済）、unbound mode で 15 分まで OK
+  // max_tokens は 8192 (改善提案 5件 + scoring + scope_check + bep 全部入れると 4096 では途中切れ)
+  // 実例: Mellow Midnight DJ 5回目分析で position 4425 で JSON 途切れエラー
   const message = await withRetry('messages.create', () => client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT + similarCasesPrompt,
     messages: [
       {
